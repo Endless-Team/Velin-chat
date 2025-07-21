@@ -1,17 +1,42 @@
-// import { contextBridge, ipcRenderer } from 'electron';
 
-window.addEventListener('DOMContentLoaded', () => {
-    const replaceText = (selector, text) => {
-      const element = document.getElementById(selector)
-      if (element) element.innerText = text
-    }
- 
-    for (const dependency of ['chrome', 'node', 'electron']) {
-      replaceText(`${dependency}-version`, process.versions[dependency])
-    }
+// window.addEventListener("DOMContentLoaded", () => {
+  //   const replaceText = (selector, text) => {
+    //     const element = document.getElementById(selector);
+    //     if (element) element.innerText = text;
+    //   };
+    
+    //   for (const dependency of ["chrome", "node", "electron"]) {
+      //     replaceText(`${dependency}-version`, process.versions[dependency]);
+//   }
+// });
 
-    // contextBridge.exposeInMainWorld('electronAPI', {
-    //     sendCommand: (command, args) => ipcRenderer.send('command', { command, args }),
-    //     onCommandResult: (callback) => ipcRenderer.on('command-result', (event, result) => callback(result))
-    // });
-  })
+/*
+import { ipcRenderer, contextBridge } from "electron";
+
+// --------- Expose some API to the Renderer process ---------
+contextBridge.exposeInMainWorld("electronAPI", {
+  on(channel, listener) {
+    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args));
+  },
+  off(channel, listener) {
+    return ipcRenderer.off(channel, listener);
+  },
+  send(channel, ...args) {
+    return ipcRenderer.send(channel, ...args);
+  },
+  invoke(channel, ...args) {
+    return ipcRenderer.invoke(channel, ...args);
+  },
+  // You can expose other APIs you need here.
+  // ...
+});
+*/
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  on: (channel, listener) => ipcRenderer.on(channel, listener),
+  off: (channel, listener) => ipcRenderer.removeListener(channel, listener),
+  send: (channel, ...args) => ipcRenderer.send(channel, ...args),
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+});
