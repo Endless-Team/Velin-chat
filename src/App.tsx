@@ -1,9 +1,20 @@
 import { useState, useEffect } from "react";
 import Topbar from "./components/Topbar";
 import Serverbar from "./components/Serverbar";
+import Directmessage from "./components/Directmessage";
+
+import Login from "./components/Login";
 
 function App() {
   const [visualize, setVisualize] = useState("");
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  //! Per Logout
+  // localStorage.removeItem("user");
+  // setUser(null);
 
   useEffect(() => {
     const handler = (_event: any, newPage: string) => {
@@ -18,8 +29,9 @@ function App() {
 
   let content;
   switch (visualize) {
-    case "home":
-      content = <div className="text-custom-dark">Pagina Home</div>;
+    case "dm":
+    default:
+      content = <Directmessage />;
       break;
     case "settings":
       content = <div className="text-custom-dark">Pagina Impostazioni</div>;
@@ -27,17 +39,20 @@ function App() {
     case "about":
       content = <div className="text-custom-dark">Pagina Info</div>;
       break;
-    default:
-      content = <div className="text-custom-dark">Seleziona una pagina</div>;
   }
 
   return (
     <>
       <Topbar />
-      <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
-        <Serverbar />
-        <div style={{ flex: 1, padding: "1rem" }}>{content}</div>
-      </div>
+
+      {!user ? (
+        <Login onLoginSuccess={(user) => setUser(user)} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
+          <Serverbar />
+          <div style={{ flex: 1, padding: "1rem" }}>{content}</div>
+        </div>
+      )}
     </>
   );
 }

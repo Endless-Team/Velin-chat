@@ -12,7 +12,7 @@ function Serverbar() {
               className="btn border-0 p-0 rounded bg-primary d-flex align-items-center justify-content-center server-ico"
               src="https://picsum.photos/40"
               alt="Random"
-              onClick={() => handleClick("home")}
+              onClick={() => handleClick("dm")}
             />
           </li>
           <li>

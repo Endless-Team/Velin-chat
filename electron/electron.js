@@ -1,9 +1,15 @@
-const path = require('path');
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const path = require("path");
+const { app, BrowserWindow, shell } = require("electron");
 
-const isDev = process.env.IS_DEV == "true" ? true : false;
+const isDev = process.env.IS_DEV === "true";
 
-let win; // Definisci la variabile globale
+// importa moduli separati
+const setupWindowHandlers = require("./ipc/window");
+const setupPageHandlers = require("./ipc/page");
+const setupUserHandlers = require("./ipc/user");
+const { connectToDatabase } = require("./mongo");
+
+let win;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -13,7 +19,7 @@ function createWindow() {
     resizable: true,
     frame: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -26,48 +32,33 @@ function createWindow() {
 
   win.loadURL(
     isDev
-      ? 'http://localhost:3000'
-      : `file://${path.join(__dirname, '../dist/index.html')}`
+      ? "http://localhost:3000"
+      : `file://${path.join(__dirname, "../dist/index.html")}`
   );
-  // Open the DevTools.
+
   if (isDev) {
-    //win.webContents.openDevTools();
+    // win.webContents.openDevTools();
   }
+
+  //=== Database ===
+  connectToDatabase();
+
+  //=== Moduli IPC ===
+  setupWindowHandlers(win);
+  setupPageHandlers(win);
+  setupUserHandlers(win);
 }
 
 app.whenReady().then(() => {
-  createWindow()
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+  createWindow();
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
-});
-
-// === Canali IPC ===
-
-// === Gestione finestra ===
-ipcMain.handle('window:minimize', () => {
-  win?.minimize();
-});
-
-ipcMain.handle('window:maximize', () => {
-  if (win?.isMaximized()) {
-    win.restore();
-  } else {
-    win?.maximize();
-  }
-});
-
-ipcMain.handle('window:close', () => {
-  win?.close();
-});
-
-// === Gestione visualizzazione ===
-ipcMain.on('page:load', (_event, newPage) => {
-  win.webContents.send('page:visualize', newPage);
 });
