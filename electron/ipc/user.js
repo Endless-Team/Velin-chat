@@ -35,6 +35,10 @@ function setupUserHandlers(win) {
       },
     };
   });
+
+  ipcMain.on('user:logout', (_event) => {
+    win.webContents.send('user:logout');
+  });
 }
 
 module.exports = setupUserHandlers;
