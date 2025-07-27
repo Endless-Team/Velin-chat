@@ -3,6 +3,7 @@ import { useState } from "react";
 function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -10,15 +11,12 @@ function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
     setError(null);
 
     try {
-      const res = await window.electronAPI.invoke(
-        "user:login",
-        username,
-        password
-      );
+      const res = await window.electronAPI.invoke("user:login", username, password);
       if (res.success) {
         onLoginSuccess(res.user);
-        // Salva lo stato loggato
-        localStorage.setItem("user", JSON.stringify(res.user));
+        if (rememberMe) {
+          localStorage.setItem("user", JSON.stringify(res.user));
+        }
       } else {
         setError(res.error);
       }
@@ -28,7 +26,7 @@ function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
   };
 
   return (
-    <div className="container mt-5" style={{ maxWidth: "400px" }}>
+    <div className="container pt-5 text-white" style={{ maxWidth: "400px" }}>
       <h3 className="mb-3">Login</h3>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
@@ -54,9 +52,24 @@ function Login({ onLoginSuccess }: { onLoginSuccess: (user: any) => void }) {
 
         {error && <div className="alert alert-danger">{error}</div>}
 
-        <button type="submit" className="btn btn-primary w-100">
-          Accedi
-        </button>
+        <div className="d-flex justify-content-between align-items-center">
+          <div className="form-check mb-0">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
+            <label className="form-check-label ms-1" htmlFor="rememberMe">
+              Rimani connesso
+            </label>
+          </div>
+
+          <button type="submit" className="btn btn-primary">
+            Accedi
+          </button>
+        </div>
       </form>
     </div>
   );

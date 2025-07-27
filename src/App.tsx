@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Topbar from "./components/Topbar";
 import Serverbar from "./components/Serverbar";
 import Directmessage from "./components/Directmessage";
-import Profile from "./components/Profle";
+import Profile from "./components/Profile";
 
 import Login from "./components/Login";
 
@@ -19,7 +19,7 @@ function App() {
     };
 
     const resetUser = (_event: any) => {
-      console.log("ciooooooooo")
+      console.log("ciooooooooo");
       localStorage.removeItem("user");
       setUser(null);
     };
@@ -51,12 +51,14 @@ function App() {
       <Topbar />
 
       {!user ? (
-        <Login onLoginSuccess={(user) => setUser(user)} />
+        <div style={{ backgroundColor: "#242424" }}>
+          <Login onLoginSuccess={(user) => setUser(user)} />
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
           <Serverbar />
           <div style={{ flex: 1, padding: "1rem" }}>{content}</div>
-          <Profile />
+          <Profile user={user} />
         </div>
       )}
     </>
