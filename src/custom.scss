@@ -17,3 +17,9 @@ $custom-colors: (
     border-color: $color !important;
   }
 }
+
+.custom-border {
+  border-top: solid 2px rgb(24, 24, 24);
+  border-left: solid 2px rgb(24, 24, 24);
+  border-top-left-radius: 25px;
+}

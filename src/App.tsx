@@ -57,7 +57,7 @@ function App() {
       ) : (
         <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
           <Serverbar />
-          <div style={{ flex: 1, padding: "1rem" }}>{content}</div>
+          <div className="bg-custom-dark" style={{ flex: 1 }}>{content}</div>
           <Profile user={user} />
         </div>
       )}

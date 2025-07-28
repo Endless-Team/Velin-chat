@@ -3,7 +3,7 @@ function Topbar() {
     <>
       <nav className="navbar bg-custom-dark drag">
         <div className="container-fluid">
-          <span className="navbar-brand text-white ml-3">Dove</span>
+          <span className="navbar-brand text-white ms-4">Dove</span>
           <div className="d-flex gap-2">
             <button
               className="btn text-white border-0 no-drag custom-button"
