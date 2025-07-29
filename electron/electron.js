@@ -7,6 +7,7 @@ const isDev = process.env.IS_DEV === "true";
 const setupWindowHandlers = require("./ipc/window");
 const setupPageHandlers = require("./ipc/page");
 const setupUserHandlers = require("./ipc/user");
+const setupServerHandlers = require("./ipc/server");
 const { connectToDatabase } = require("./mongo");
 
 let win;
@@ -47,6 +48,7 @@ function createWindow() {
   setupWindowHandlers(win);
   setupPageHandlers(win);
   setupUserHandlers(win);
+  setupServerHandlers(win)
 }
 
 app.whenReady().then(() => {
