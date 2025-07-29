@@ -1,5 +1,5 @@
 $custom-colors: (
-  "custom-dark": rgb(30, 30, 30),
+  "custom-dark": rgb(18, 18, 20),
   "custom-transparent": rgba(0, 0, 0, 0),
   // aggiungi altri colori qui
 );
@@ -19,7 +19,7 @@ $custom-colors: (
 }
 
 .custom-border {
-  border-top: solid 2px rgb(24, 24, 24);
-  border-left: solid 2px rgb(24, 24, 24);
+  border-top: solid 1px rgba(255, 255, 255, 0.3);
+  border-left: solid 1px rgba(255, 255, 255, 0.3);
   border-top-left-radius: 25px;
 }
