@@ -19,6 +19,10 @@ function setupServerHandlers(win) {
 
     return servers;
   });
+
+  ipcMain.on("server:select", (_event, server) => {
+    win.webContents.send("server:selected", server);
+  });
 }
 
 module.exports = setupServerHandlers;

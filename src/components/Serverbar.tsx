@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
-
-type Server = {
-  _id: string;
-  name: string;
-  src: string;
-  channels: any[]; // puoi migliorarlo con una struttura precisa se vuoi
-};
+import type { Server } from "../types";
+import { toId } from "../utils/id";
 
 function Serverbar({ user }: { user: any }) {
   const [servers, setServers] = useState<Server[]>([]);
@@ -25,18 +20,15 @@ function Serverbar({ user }: { user: any }) {
     fetchServers();
   }, [user]);
 
-  const handleClick = (page: string) => {
+  const onGeneralClick = (page: string) => {
     window.electronAPI.send("page:load", page);
   };
 
   const onServerClick = (server: Server) => {
-    window.electronAPI.send("server:selected", server);
-  };
-
-  const random = () => {
-    var min = 1;
-    var max = 100;
-    return min + Math.random() * (max - min);
+    (window as any).selectedServer = server;
+    window.dispatchEvent(
+      new CustomEvent("server:selected", { detail: server })
+    );
   };
 
   return (
@@ -47,19 +39,28 @@ function Serverbar({ user }: { user: any }) {
             className="btn border-0 p-0 rounded bg-primary d-flex align-items-center justify-content-center server-ico"
             src="https://picsum.photos/40"
             alt="Random"
-            onClick={() => handleClick("dm")}
+            onClick={() => onGeneralClick("dm")}
           />
         </li>
-        <hr className="custom-divider" />
+        <hr
+          className="w-50 bg-white"
+          style={{
+            height: 2,
+            margin: 0,
+            marginTop: 8,
+          }}
+        />
         {servers.map((server) => (
-          // <li key={String(server._id) || random}>
-          <li key={random()}>
+          <li key={toId(server._id?.buffer)}>
             <img
               className="btn border-0 p-0 rounded bg-primary d-flex align-items-center justify-content-center server-ico"
               style={{ marginTop: 8 }}
               src={server.src || "https://via.placeholder.com/40"}
               alt={server.name}
-              onClick={() => onServerClick(server)}
+              onClick={() => {
+                onServerClick(server);
+                onGeneralClick("server");
+              }}
             />
           </li>
         ))}

@@ -1,4 +1,4 @@
-function Directmessage() {
+function DirectmessageComp() {
   return (
     <>
       <div
@@ -19,4 +19,4 @@ function Directmessage() {
   );
 }
 
-export default Directmessage;
+export default DirectmessageComp;

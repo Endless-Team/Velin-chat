@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
+
 import Topbar from "./components/Topbar";
 import Serverbar from "./components/Serverbar";
-import Directmessage from "./components/Directmessage";
 import Profile from "./components/Profile";
+
+import DirectmessageComp from "./components/Directmessage";
+import ServerComp from "./components/Server";
 
 import Login from "./components/Login";
 
@@ -19,7 +22,6 @@ function App() {
     };
 
     const resetUser = (_event: any) => {
-      console.log("ciooooooooo");
       localStorage.removeItem("user");
       setUser(null);
     };
@@ -36,12 +38,12 @@ function App() {
   switch (visualize) {
     case "dm":
     default:
-      content = <Directmessage />;
+      content = <DirectmessageComp />;
+      break;
+    case "server":
+      content = <ServerComp />;
       break;
     case "settings":
-      content = <div className="text-custom-dark">Pagina Impostazioni</div>;
-      break;
-    case "about":
       content = <div className="text-custom-dark">Pagina Info</div>;
       break;
   }
@@ -57,7 +59,9 @@ function App() {
       ) : (
         <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
           <Serverbar user={user} />
-          <div className="bg-custom-dark" style={{ flex: 1 }}>{content}</div>
+          <div className="bg-custom-dark" style={{ flex: 1 }}>
+            {content}
+          </div>
           <Profile user={user} />
         </div>
       )}
