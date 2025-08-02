@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import type { Server } from "../types";
+import type { User, Server } from "../types";
 import { toId } from "../utils/id";
 
-function Serverbar({ user }: { user: any }) {
+function Serverbar({ user }: { user: User }) {
   const [servers, setServers] = useState<Server[]>([]);
 
   useEffect(() => {

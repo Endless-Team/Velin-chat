@@ -12,7 +12,7 @@ function DirectmessageComp() {
             });
           }}
         >
-          clicca qua gai
+          Test
         </button>
       </div>
     </>

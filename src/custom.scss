@@ -1,6 +1,7 @@
 $custom-colors: (
   "custom-dark": rgb(18, 18, 20),
   "custom-gray": rgb(30, 30, 30),
+  "custom-border": rgba(255, 255, 255, 0.3),
   "custom-transparent": rgba(0, 0, 0, 0),
   // aggiungi altri colori qui
 );
@@ -17,6 +18,10 @@ $custom-colors: (
   .border-#{$name} {
     border-color: $color !important;
   }
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 
 .custom-border {
