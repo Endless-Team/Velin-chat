@@ -1,12 +1,7 @@
 /// <reference types="vite/client" />
 
-interface ElectronAPI {
-  on: (channel: string, listener: (...args: any[]) => void) => void;
-  off: (channel: string, listener: (...args: any[]) => void) => void;
-  send: (channel: string, ...args: any[]) => void;
-  invoke: (channel: string, ...args: any[]) => Promise<any>;
-}
-
-interface Window {
-  electronAPI: ElectronAPI;
+declare module "*.vue" {
+  import type { DefineComponent } from "vue";
+  const component: DefineComponent<{}, {}, any>;
+  export default component;
 }
