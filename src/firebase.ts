@@ -1,6 +1,8 @@
-import {initializeApp} from "firebase/app";
-import {getAuth} from "firebase/auth";
-import {getDatabase} from "firebase/database";
+// src/firebase.ts
+
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Configurazione Firebase (sostituisci con i tuoi dati dal Firebase Console)
 const firebaseConfig = {
@@ -18,4 +20,6 @@ const app = initializeApp(firebaseConfig);
 
 // Esporta i servizi
 export const auth = getAuth(app);
-export const database = getDatabase(app);
+export const db = getFirestore(app);
+
+export default app;

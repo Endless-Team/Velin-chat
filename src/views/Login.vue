@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import {ref} from "vue";
-import {useRouter} from "vue-router";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider
 } from "firebase/auth";
-import {auth} from "../firebase";
-import {useEncryption} from "../composables/useEncryption";
+import { auth } from "../firebase";
+import { useEncryption } from "../composables/useEncryption";
+import { firebaseMessaging } from "../services/firebaseMessaging";
 
 const router = useRouter();
-const {initializeNewUserKeys, loadAndUnlockKeys} = useEncryption();
+const { initializeNewUserKeys, loadAndUnlockKeys } = useEncryption();
 
 const email = ref("");
 const password = ref("");
@@ -32,9 +33,23 @@ async function onSubmit() {
           password.value
       );
 
+      console.log('✅ Utente registrato:', userCredential.user.uid);
+
+      // Salva profilo utente in Firebase
+      try {
+        await firebaseMessaging.saveUserProfile(
+            userCredential.user.uid,
+            email.value
+        );
+        console.log('✅ Profilo salvato');
+      } catch (profileError) {
+        console.error('Errore nel salvataggio del profilo:', profileError);
+      }
+
       // Genera le chiavi di crittografia per il nuovo utente
       try {
         await initializeNewUserKeys(userCredential.user.uid, password.value);
+        console.log('✅ Chiavi crittografiche generate');
       } catch (keyError) {
         console.error('Errore nella generazione delle chiavi:', keyError);
         errorMsg.value = "Errore nella generazione delle chiavi crittografiche.";
@@ -51,6 +66,8 @@ async function onSubmit() {
           password.value
       );
 
+      console.log('✅ Login effettuato:', userCredential.user.uid);
+
       // Carica e sblocca le chiavi di crittografia
       try {
         const keysUnlocked = await loadAndUnlockKeys(
@@ -63,6 +80,8 @@ async function onSubmit() {
           loading.value = false;
           return;
         }
+
+        console.log('✅ Chiavi sbloccate');
       } catch (keyError) {
         console.error('Errore nel caricamento delle chiavi:', keyError);
         errorMsg.value = "Errore nel caricamento delle chiavi crittografiche.";
@@ -73,6 +92,7 @@ async function onSubmit() {
       await router.push("/dashboard");
     }
   } catch (error: any) {
+    console.error('❌ Errore autenticazione:', error);
     switch (error.code) {
       case "auth/email-already-in-use":
         errorMsg.value = "Questa email è già registrata.";
@@ -110,30 +130,49 @@ async function signInWithGoogle() {
   try {
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
-
-    // Verifica se l'utente ha già le chiavi (login) o se è nuovo (registrazione)
     const userId = userCredential.user.uid;
 
-    // Prova a caricare le chiavi esistenti
-    // Per Google non abbiamo la password, quindi usiamo una password derivata
-    // IMPORTANTE: In produzione, dovresti chiedere una password separata per E2EE
-    const tempPassword = `google_${userId}_temp`; // Placeholder - da migliorare
+    console.log('✅ Login Google:', userId);
 
-    try {
-      const keysExist = await loadAndUnlockKeys(userId, tempPassword);
+    // Verifica se è un nuovo utente
+    const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
 
-      if (!keysExist) {
-        // Nuovo utente Google - genera le chiavi
-        await initializeNewUserKeys(userId, tempPassword);
+    // Password temporanea per Google (in produzione, chiedi una password separata)
+    const tempPassword = `google_${userId}_temp`;
+
+    if (isNewUser) {
+      // Nuovo utente - salva profilo
+      try {
+        await firebaseMessaging.saveUserProfile(
+            userId,
+            userCredential.user.email || '',
+            userCredential.user.displayName || undefined
+        );
+        console.log('✅ Profilo Google salvato');
+      } catch (profileError) {
+        console.error('Errore nel salvataggio profilo:', profileError);
       }
-    } catch (keyError) {
-      console.error('Errore con le chiavi:', keyError);
-      // Per Google, procediamo comunque
-      // In produzione, dovresti gestire questo caso meglio
+
+      // Genera chiavi
+      try {
+        await initializeNewUserKeys(userId, tempPassword);
+        console.log('✅ Chiavi generate per utente Google');
+      } catch (keyError) {
+        console.error('Errore generazione chiavi:', keyError);
+      }
+    } else {
+      // Utente esistente - carica chiavi
+      try {
+        await loadAndUnlockKeys(userId, tempPassword);
+        console.log('✅ Chiavi caricate per utente Google');
+      } catch (keyError) {
+        console.error('Errore caricamento chiavi:', keyError);
+      }
     }
 
     await router.push("/dashboard");
   } catch (error: any) {
+    console.error('❌ Errore Google Sign-In:', error);
     switch (error.code) {
       case "auth/popup-closed-by-user":
         errorMsg.value = "Popup chiuso. Riprova.";

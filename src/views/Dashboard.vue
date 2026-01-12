@@ -93,8 +93,9 @@ const filteredChats = computed(() => {
   );
 });
 
-onMounted(() => {
-  loadChats(mockChats);
+onMounted(async () => {
+  // Carica chat reali da Firebase invece di mock
+  await loadUserChats();
 
   if (!isKeysUnlocked.value) {
     showUnlockModal.value = true;

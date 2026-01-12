@@ -1,12 +1,15 @@
-import { ref, computed } from 'vue';
-import messageEncryptionService from '../services/messageEncryptionService';
-import { keyStore } from '../stores/keyStore';
-import type { Message, Chat, EncryptedMessagePayload } from '../types/chat.types';
+// src/composables/useEncryptedChat.ts - VERSIONE FIREBASE
+
+import {ref, computed, onUnmounted} from 'vue';
+import {firebaseMessaging} from '../services/firebaseMessaging';
+import {auth} from '../firebase';
+import type {Message, Chat} from '../types/chat.types';
 
 export function useEncryptedChat() {
     const chats = ref<Chat[]>([]);
     const messages = ref<Map<string, Message[]>>(new Map());
     const selectedChatId = ref<string | null>(null);
+    const messageUnsubscribers = ref<Map<string, () => void>>(new Map());
 
     const selectedChat = computed(() => {
         if (!selectedChatId.value) return null;
@@ -19,142 +22,277 @@ export function useEncryptedChat() {
     });
 
     /**
-     * Invia un messaggio cifrato
+     * Carica le chat dell'utente da Firebase
+     */
+    async function loadUserChats(): Promise<void> {
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                console.error('Utente non autenticato');
+                return;
+            }
+
+            console.log('📥 Caricamento chat da Firebase...');
+            const userChats = await firebaseMessaging.loadUserChats(currentUser.uid);
+            chats.value = userChats;
+            console.log(`✅ ${userChats.length} chat caricate`);
+        } catch (error) {
+            console.error('Errore nel caricamento delle chat:', error);
+        }
+    }
+
+    /**
+     * Invia un messaggio cifrato (MODALITÀ MOCK per ora)
      */
     async function sendEncryptedMessage(
         chatId: string,
-        text: string,
-        recipientPublicKey: string
+        text: string
     ): Promise<void> {
         try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                throw new Error('Utente non autenticato');
+            }
+
             const chat = chats.value.find(c => c.id === chatId);
-            if (!chat) throw new Error('Chat non trovata');
+            if (!chat) {
+                throw new Error('Chat non trovata');
+            }
 
-            // Parse la chiave pubblica del destinatario
-            const recipientPublicKeyJwk = JSON.parse(recipientPublicKey);
+            console.log('📤 Invio messaggio:', {chatId, text});
 
-            // Cifra il messaggio
-            const encryptedMessage = await messageEncryptionService.encryptMessage(
-                text,
-                recipientPublicKeyJwk
-            );
+            // MODALITÀ MOCK: Invia senza crittografia per ora
+            // TODO: Riattivare crittografia con chiavi reali
 
-            // Crea il messaggio
-            const message: Message = {
-                id: Date.now().toString(),
-                chatId,
-                senderId: 'current-user-id', // TODO: prendere da auth
-                text, // Testo in chiaro per visualizzazione locale
-                encryptedContent: encryptedMessage.encryptedContent,
-                encryptedAesKey: encryptedMessage.encryptedAesKey,
-                iv: encryptedMessage.iv,
-                sent: true,
-                timestamp: new Date().toLocaleTimeString('it-IT', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }),
-                status: 'sending'
+            const recipientId = chat.participants?.find(id => id !== currentUser.uid);
+            if (!recipientId) {
+                throw new Error('Destinatario non trovato');
+            }
+
+            // Simula dati cifrati (in realtà sono mock)
+            const mockEncrypted = {
+                encryptedContent: btoa(text), // Base64 del testo
+                encryptedAesKey: 'mock-aes-key',
+                iv: 'mock-iv'
             };
 
-            // Aggiungi alla lista locale
-            const chatMessages = messages.value.get(chatId) || [];
-            chatMessages.push(message);
+            // Invia a Firebase
+            await firebaseMessaging.sendMessage(
+                chatId,
+                currentUser.uid,
+                recipientId,
+                mockEncrypted.encryptedContent,
+                mockEncrypted.encryptedAesKey,
+                mockEncrypted.iv
+            );
+
+            console.log('✅ Messaggio inviato a Firebase');
+
+            // Nota: Il messaggio apparirà tramite il listener real-time
+
+        } catch (error) {
+            console.error('❌ Errore nell\'invio del messaggio:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Seleziona una chat e carica i messaggi
+     */
+    async function selectChat(chatId: string): Promise<void> {
+        try {
+            selectedChatId.value = chatId;
+
+            const chat = chats.value.find(c => c.id === chatId);
+            if (chat) {
+                chat.unread = 0;
+            }
+
+            // Disconnetti listener precedente se esiste
+            const previousUnsubscriber = messageUnsubscribers.value.get(chatId);
+            if (previousUnsubscriber) {
+                previousUnsubscriber();
+            }
+
+            // Carica messaggi esistenti
+            await loadChatMessages(chatId);
+
+            // Sottoscrivi ai nuovi messaggi in tempo reale
+            const unsubscribe = firebaseMessaging.subscribeToMessages(
+                chatId,
+                (firebaseMessages) => {
+                    handleNewMessages(chatId, firebaseMessages);
+                }
+            );
+
+            messageUnsubscribers.value.set(chatId, unsubscribe);
+
+        } catch (error) {
+            console.error('Errore nella selezione della chat:', error);
+        }
+    }
+
+    /**
+     * Carica messaggi di una chat da Firebase
+     */
+    async function loadChatMessages(chatId: string): Promise<void> {
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) return;
+
+            console.log('📥 Caricamento messaggi per chat:', chatId);
+
+            const firebaseMessages = await firebaseMessaging.loadChatMessages(chatId);
+
+            // Converti messaggi Firebase in formato app
+            const chatMessages: Message[] = await Promise.all(
+                firebaseMessages.map(async (msg) => {
+                    // MOCK: Decifra (in realtà decodifica base64)
+                    let text = '';
+                    try {
+                        text = atob(msg.encryptedContent); // Mock decryption
+                    } catch {
+                        text = 'Messaggio non decifrabile';
+                    }
+
+                    return {
+                        id: msg.id,
+                        chatId,
+                        senderId: msg.senderId,
+                        text,
+                        sent: msg.senderId === currentUser.uid,
+                        timestamp: formatTimestamp(msg.timestamp),
+                        status: msg.status || 'delivered'
+                    };
+                })
+            );
+
+            messages.value.set(chatId, chatMessages);
+            console.log(`✅ ${chatMessages.length} messaggi caricati`);
+
+        } catch (error) {
+            console.error('Errore nel caricamento dei messaggi:', error);
+        }
+    }
+
+    /**
+     * Gestisce nuovi messaggi dal listener real-time
+     */
+    async function handleNewMessages(chatId: string, firebaseMessages: any[]): Promise<void> {
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) return;
+
+            const chatMessages: Message[] = await Promise.all(
+                firebaseMessages.map(async (msg) => {
+                    let text = '';
+                    try {
+                        text = atob(msg.encryptedContent); // Mock decryption
+                    } catch {
+                        text = 'Messaggio non decifrabile';
+                    }
+
+                    return {
+                        id: msg.id,
+                        chatId,
+                        senderId: msg.senderId,
+                        text,
+                        sent: msg.senderId === currentUser.uid,
+                        timestamp: formatTimestamp(msg.timestamp),
+                        status: msg.status || 'delivered'
+                    };
+                })
+            );
+
             messages.value.set(chatId, chatMessages);
 
-            // TODO: Invia al server via WebSocket/API
-            const payload: EncryptedMessagePayload = {
-                id: message.id,
-                chatId,
-                senderId: message.senderId,
-                recipientId: chat.participants?.[0] || '', // Per chat 1-1
-                encryptedContent: encryptedMessage.encryptedContent,
-                encryptedAesKey: encryptedMessage.encryptedAesKey,
-                iv: encryptedMessage.iv,
-                timestamp: message.timestamp
-            };
-
-            console.log('Messaggio cifrato da inviare:', payload);
-
             // Aggiorna ultimo messaggio nella chat
-            chat.lastMessage = text;
-            chat.timestamp = message.timestamp;
+            if (chatMessages.length > 0) {
+                const lastMsg = chatMessages[chatMessages.length - 1];
+                const chat = chats.value.find(c => c.id === chatId);
+                if (chat) {
+                    chat.lastMessage = lastMsg.text;
+                    chat.timestamp = lastMsg.timestamp;
+
+                    // Incrementa unread se non è la chat selezionata e non è mio
+                    if (selectedChatId.value !== chatId && !lastMsg.sent) {
+                        chat.unread++;
+                    }
+                }
+            }
 
         } catch (error) {
-            console.error('Errore nell\'invio del messaggio:', error);
-            throw error;
+            console.error('Errore nella gestione nuovi messaggi:', error);
         }
     }
 
     /**
-     * Ricevi e decifra un messaggio
+     * Crea una nuova chat con un utente
      */
-    async function receiveEncryptedMessage(
-        encryptedPayload: EncryptedMessagePayload
-    ): Promise<void> {
+    async function createChatWithUser(otherUserEmail: string): Promise<string | null> {
         try {
-            const privateKey = keyStore.getPrivateKey();
-            if (!privateKey) {
-                throw new Error('Chiave privata non disponibile. Effettua il login.');
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                throw new Error('Utente non autenticato');
             }
 
-            // Decifra il messaggio
-            const decrypted = await messageEncryptionService.decryptMessage(
-                {
-                    encryptedContent: encryptedPayload.encryptedContent,
-                    encryptedAesKey: encryptedPayload.encryptedAesKey,
-                    iv: encryptedPayload.iv
-                },
-                privateKey
+            // Cerca l'utente per email
+            const otherUser = await firebaseMessaging.searchUserByEmail(otherUserEmail);
+            if (!otherUser) {
+                throw new Error('Utente non trovato');
+            }
+
+            // Crea o recupera chat
+            const chatId = await firebaseMessaging.getOrCreateDirectChat(
+                currentUser.uid,
+                otherUser.id
             );
 
-            // Crea il messaggio decifrato
-            const message: Message = {
-                id: encryptedPayload.id,
-                chatId: encryptedPayload.chatId,
-                senderId: encryptedPayload.senderId,
-                text: decrypted.content,
-                sent: false,
-                timestamp: encryptedPayload.timestamp,
-                status: 'delivered'
-            };
+            // Ricarica le chat
+            await loadUserChats();
 
-            // Aggiungi alla lista
-            const chatMessages = messages.value.get(encryptedPayload.chatId) || [];
-            chatMessages.push(message);
-            messages.value.set(encryptedPayload.chatId, chatMessages);
-
-            // Aggiorna la chat
-            const chat = chats.value.find(c => c.id === encryptedPayload.chatId);
-            if (chat) {
-                chat.lastMessage = decrypted.content;
-                chat.timestamp = message.timestamp;
-                chat.unread++;
-            }
-
+            return chatId;
         } catch (error) {
-            console.error('Errore nella ricezione del messaggio:', error);
-            throw error;
+            console.error('Errore nella creazione della chat:', error);
+            return null;
         }
     }
 
     /**
-     * Seleziona una chat
+     * Formatta timestamp
      */
-    function selectChat(chatId: string): void {
-        selectedChatId.value = chatId;
+    function formatTimestamp(timestamp: any): string {
+        if (!timestamp) return 'Ora';
 
-        // Azzera i messaggi non letti
-        const chat = chats.value.find(c => c.id === chatId);
-        if (chat) {
-            chat.unread = 0;
+        try {
+            const date = timestamp.toDate();
+            return date.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return 'Ora';
         }
     }
 
     /**
-     * Carica le chat
+     * Pulisci i listener quando il composable viene distrutto
      */
-    function loadChats(chatList: Chat[]): void {
-        chats.value = chatList;
+    onUnmounted(() => {
+        messageUnsubscribers.value.forEach(unsubscribe => unsubscribe());
+        messageUnsubscribers.value.clear();
+    });
+
+    /**
+     * Pulisci i messaggi di una chat
+     */
+    function clearChatMessages(chatId: string): void {
+        messages.value.delete(chatId);
+        const unsubscribe = messageUnsubscribers.value.get(chatId);
+        if (unsubscribe) {
+            unsubscribe();
+            messageUnsubscribers.value.delete(chatId);
+        }
     }
 
     return {
@@ -162,9 +300,10 @@ export function useEncryptedChat() {
         selectedChat,
         currentMessages,
         selectedChatId,
+        loadUserChats,
         sendEncryptedMessage,
-        receiveEncryptedMessage,
         selectChat,
-        loadChats
+        createChatWithUser,
+        clearChatMessages
     };
 }
