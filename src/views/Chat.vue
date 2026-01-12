@@ -33,7 +33,7 @@ const displayName = computed(() => {
   return user.value?.displayName || user.value?.email?.split('@')[0] || 'User';
 });
 
-// Mock data per le chat con chiavi pubbliche
+// Mock data per le chat (in produzione verranno dal backend)
 const mockChats: Chat[] = [
   {
     id: '1',
@@ -45,7 +45,7 @@ const mockChats: Chat[] = [
     online: true,
     participants: ['user-marco-id'],
     publicKeys: {
-      'user-marco-id': '{"kty":"RSA","e":"AQAB","n":"xGOr-H7A..."}'
+      'user-marco-id': '{"kty":"RSA","e":"AQAB","n":"..."}' // Mock
     }
   },
   {
@@ -69,7 +69,7 @@ const mockChats: Chat[] = [
     online: false,
     participants: ['user-laura-id'],
     publicKeys: {
-      'user-laura-id': '{"kty":"RSA","e":"AQAB","n":"yHPs-I8B..."}'
+      'user-laura-id': '{"kty":"RSA","e":"AQAB","n":"..."}' // Mock
     }
   },
   {
@@ -118,10 +118,10 @@ async function sendMessage() {
   }
 
   try {
-    // Per chat di gruppo
+    // Per chat di gruppo, serve logica diversa
     if (selectedChat.value.isGroup) {
-      console.warn('Invio messaggi di gruppo in sviluppo');
-      // TODO: Implementare logica gruppo
+      // TODO: Implementare invio per gruppo
+      console.warn('Invio messaggi di gruppo non ancora implementato');
       return;
     }
 
@@ -196,11 +196,9 @@ function handleKeysUnlocked() {
 
         <div class="flex items-center gap-1 flex-shrink-0">
           <!-- Indicatore stato crittografia -->
-          <button
-              @click="showUnlockModal = true"
+          <div
               :class="isKeysUnlocked ? 'text-green-400' : 'text-yellow-400'"
-              :title="isKeysUnlocked ? 'Crittografia attiva' : 'Sblocca crittografia'"
-              class="rounded-lg p-2 hover:bg-white/5 transition-colors"
+              :title="isKeysUnlocked ? 'Crittografia attiva' : 'Crittografia bloccata'"
           >
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -208,17 +206,17 @@ function handleKeysUnlocked() {
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
               />
               <path
                   v-else
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-          </button>
+          </div>
 
           <button
               @click="handleLogout"
@@ -296,8 +294,7 @@ function handleKeysUnlocked() {
           <p class="mt-2 text-sm text-slate-400">
             Scegli una conversazione dalla lista per iniziare a chattare
           </p>
-          <p class="mt-2 text-xs flex items-center justify-center gap-1"
-             :class="isKeysUnlocked ? 'text-green-400' : 'text-yellow-400'">
+          <p class="mt-1 text-xs text-green-400 flex items-center justify-center gap-1">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                   stroke-linecap="round"
@@ -306,7 +303,7 @@ function handleKeysUnlocked() {
                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-            {{ isKeysUnlocked ? 'Protetto con crittografia end-to-end' : 'Sblocca per chattare in sicurezza' }}
+            Protetto con crittografia end-to-end
           </p>
         </div>
       </div>
@@ -413,12 +410,11 @@ function handleKeysUnlocked() {
                 type="text"
                 placeholder="Scrivi un messaggio..."
                 class="flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none"
-                :disabled="!isKeysUnlocked"
             />
 
             <button
                 type="submit"
-                :disabled="!message.trim() || !isKeysUnlocked"
+                :disabled="!message.trim()"
                 class="rounded-xl bg-indigo-600 p-3 text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 flex-shrink-0"
                 title="Invia"
             >
