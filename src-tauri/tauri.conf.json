@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "mutina-chat",
+        "title": "Mutina",
         "width": 800,
         "height": 600
       }

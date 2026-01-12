@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Nascondi scrollbar per Chrome, Safari, Edge, Opera */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Nascondi scrollbar per Firefox */
+* {
+    scrollbar-width: none;
+}
+
+/* Nascondi scrollbar per IE e Edge legacy */
+* {
+    -ms-overflow-style: none;
+}
+
+/* Assicura che lo scroll funzioni comunque */
+html,
+body {
+    overflow: auto;
+}
+
+/* Disabilita il gesto swipe indietro/avanti con trackpad */
+html,
+body {
+    overscroll-behavior: none;
+}
