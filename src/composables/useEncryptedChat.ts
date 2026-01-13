@@ -47,67 +47,89 @@ export function useEncryptedChat() {
    * Invia un messaggio cifrato con le chiavi reali (E2E)
    */
   async function sendEncryptedMessage(
-  chatId: string,
-  text: string
-): Promise<void> {
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    console.error('❌ Utente non autenticato');
-    throw new Error('Utente non autenticato');
-  }
+    chatId: string,
+    text: string
+  ): Promise<void> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.error("❌ Utente non autenticato");
+      throw new Error("Utente non autenticato");
+    }
 
-  const chat = chats.value.find(c => c.id === chatId);
-  if (!chat) {
-    console.error('❌ Chat non trovata');
-    throw new Error('Chat non trovata');
-  }
+    const chat = chats.value.find((c) => c.id === chatId);
+    if (!chat) {
+      console.error("❌ Chat non trovata");
+      throw new Error("Chat non trovata");
+    }
 
-  const recipientId = chat.participants?.find(id => id !== currentUser.uid);
-  if (!recipientId) {
-    console.error('❌ Destinatario non trovato');
-    throw new Error('Destinatario non trovato');
-  }
+    const recipientId = chat.participants?.find((id) => id !== currentUser.uid);
+    if (!recipientId) {
+      console.error("❌ Destinatario non trovato");
+      throw new Error("Destinatario non trovato");
+    }
 
-  const recipientPublicKeyString = chat.publicKeys?.[recipientId];
-  if (!recipientPublicKeyString) {
-    console.error('❌ Chiave pubblica del destinatario non trovata');
-    throw new Error('Chiave pubblica del destinatario non trovata. Assicurati che l\'utente abbia generato le proprie chiavi.');
-  }
+    // ✅ Recupera ENTRAMBE le chiavi pubbliche
+    const recipientPublicKeyString = chat.publicKeys?.[recipientId];
+    const senderPublicKeyString = chat.publicKeys?.[currentUser.uid];
 
-  let recipientPublicKeyJwk: JsonWebKey;
-  try {
-    recipientPublicKeyJwk = JSON.parse(recipientPublicKeyString);
-  } catch (e) {
-    console.error('❌ Errore nel parsing della chiave pubblica:', e);
-    throw new Error('Chiave pubblica destinatario non valida');
-  }
+    if (!recipientPublicKeyString) {
+      console.error("❌ Chiave pubblica del destinatario non trovata");
+      throw new Error("Chiave pubblica del destinatario non trovata.");
+    }
 
-  console.log('📤 Invio messaggio cifrato:', {chatId, textLength: text.length, recipientId});
+    if (!senderPublicKeyString) {
+      console.error("❌ Chiave pubblica del mittente non trovata");
+      throw new Error("Chiave pubblica del mittente non trovata.");
+    }
 
-  // Cifra il messaggio con la chiave pubblica del destinatario
-  const encryptedPayload = await messageEncryptionService.encryptMessage(
-    text,
-    recipientPublicKeyJwk
-  );
+    let recipientPublicKeyJwk: JsonWebKey;
+    let senderPublicKeyJwk: JsonWebKey;
 
-  try {
-    // ✅ MODIFICATO: Invia anche il plainText per il mittente
-    await firebaseMessaging.sendMessage(
+    try {
+      recipientPublicKeyJwk = JSON.parse(recipientPublicKeyString);
+      senderPublicKeyJwk = JSON.parse(senderPublicKeyString);
+    } catch (e) {
+      console.error("❌ Errore nel parsing delle chiavi pubbliche:", e);
+      throw new Error("Chiavi pubbliche non valide");
+    }
+
+    console.log("📤 Invio messaggio cifrato per entrambi:", {
       chatId,
-      currentUser.uid,
+      textLength: text.length,
       recipientId,
-      encryptedPayload.encryptedContent,
-      encryptedPayload.encryptedAesKey,
-      encryptedPayload.iv,
-      text // ✅ AGGIUNTO: passa il testo in chiaro
-    );
-    
-    console.log('✅ Messaggio inviato a Firebase');
-  } catch (error) {
-    console.error('❌ Errore nell\'invio del messaggio:', error);
-    throw error;
+      senderId: currentUser.uid,
+    });
+
+    // ✅ Cifra il messaggio per ENTRAMBI
+    const encryptedPayloads =
+      await messageEncryptionService.encryptMessageForBoth(
+        text,
+        recipientPublicKeyJwk,
+        senderPublicKeyJwk
+      );
+
+    try {
+      // ✅ Invia entrambe le versioni cifrate
+      await firebaseMessaging.sendMessage(
+        chatId,
+        currentUser.uid,
+        recipientId,
+        // Versione per il destinatario
+        encryptedPayloads.forRecipient.encryptedContent,
+        encryptedPayloads.forRecipient.encryptedAesKey,
+        encryptedPayloads.forRecipient.iv,
+        // Versione per il mittente
+        encryptedPayloads.forSender.encryptedContent,
+        encryptedPayloads.forSender.encryptedAesKey,
+        encryptedPayloads.forSender.iv
+      );
+
+      console.log("✅ Messaggio inviato a Firebase (doppia cifratura E2E)");
+    } catch (error) {
+      console.error("❌ Errore nell'invio del messaggio:", error);
+      throw error;
+    }
   }
-}
 
   /**
    * Seleziona una chat e carica i messaggi
@@ -175,37 +197,46 @@ export function useEncryptedChat() {
 
     for (const msg of firebaseMessages) {
       let text = "Messaggio non decifrabile";
-
-      // ✅ AGGIUNTO: Se il messaggio è tuo, NON decifrarlo
       const isSentByMe = msg.senderId === currentUser.uid;
 
       try {
-        if (msg.encryptedContent && msg.encryptedAesKey && msg.iv) {
-          if (isSentByMe) {
-            // ✅ Messaggi inviati da te: usa il testo in chiaro salvato
-            text = msg.plainText || "Messaggio inviato";
-          } else {
-            // ✅ Messaggi ricevuti: decifra con la tua chiave privata
-            const decrypted = await messageEncryptionService.decryptMessage(
-              {
-                encryptedContent: msg.encryptedContent,
-                encryptedAesKey: msg.encryptedAesKey,
-                iv: msg.iv,
-              } as EncryptedMessage,
-              privateKey
-            );
-            text = decrypted.content;
-          }
+        // ✅ Scegli la versione cifrata corretta
+        let encryptedData: EncryptedMessage;
+
+        if (isSentByMe) {
+          // Se l'ho inviato io, uso la versione cifrata per il mittente
+          encryptedData = {
+            encryptedContent: msg.encryptedContentSender,
+            encryptedAesKey: msg.encryptedAesKeySender,
+            iv: msg.ivSender,
+          };
+        } else {
+          // Se l'ho ricevuto, uso la versione cifrata per il destinatario
+          encryptedData = {
+            encryptedContent: msg.encryptedContent,
+            encryptedAesKey: msg.encryptedAesKey,
+            iv: msg.iv,
+          };
+        }
+
+        // ✅ Decifra con la mia chiave privata
+        if (
+          encryptedData.encryptedContent &&
+          encryptedData.encryptedAesKey &&
+          encryptedData.iv
+        ) {
+          const decrypted = await messageEncryptionService.decryptMessage(
+            encryptedData,
+            privateKey
+          );
+          text = decrypted.content;
         } else if (msg.text) {
-          // Fallback per eventuali messaggi legacy salvati in chiaro
+          // Fallback per eventuali messaggi legacy
           text = msg.text;
         }
       } catch (e) {
         console.error("❌ Errore nella decifratura del messaggio:", e);
-        // Se è un messaggio ricevuto e non si riesce a decifrare
-        if (!isSentByMe) {
-          text = "Errore decifratura";
-        }
+        text = "🔒 Errore decifratura";
       }
 
       decryptedMessages.push({

@@ -248,20 +248,28 @@ export class FirebaseMessagingService {
     chatId: string,
     senderId: string,
     recipientId: string,
+    // Versione per il destinatario
     encryptedContent: string,
     encryptedAesKey: string,
     iv: string,
-    plainText?: string // ✅ AGGIUNTO parametro opzionale
+    // Versione per il mittente
+    encryptedContentSender: string,
+    encryptedAesKeySender: string,
+    ivSender: string
   ): Promise<void> {
     const messagesRef = collection(db, "chats", chatId, "messages");
 
     await addDoc(messagesRef, {
       senderId,
       recipientId,
+      // ✅ Versione cifrata per il destinatario
       encryptedContent,
       encryptedAesKey,
       iv,
-      plainText: plainText || null, // ✅ AGGIUNTO: salva il testo in chiaro per il mittente
+      // ✅ Versione cifrata per il mittente
+      encryptedContentSender,
+      encryptedAesKeySender,
+      ivSender,
       timestamp: serverTimestamp(),
       status: "sent",
     });
@@ -269,7 +277,7 @@ export class FirebaseMessagingService {
     // Aggiorna ultimo messaggio nella chat
     const chatRef = doc(db, "chats", chatId);
     await updateDoc(chatRef, {
-      lastMessage: plainText || "Messaggio cifrato", // ✅ Usa plainText
+      lastMessage: "🔒 Messaggio cifrato",
       timestamp: serverTimestamp(),
     });
   }
