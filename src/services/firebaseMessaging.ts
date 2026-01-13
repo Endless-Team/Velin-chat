@@ -15,7 +15,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { db, auth } from "../firebase";
+import { db } from "../firebase";
 import type { Chat, UserKeys } from "../types/chat.types";
 
 export class FirebaseMessagingService {
@@ -38,6 +38,17 @@ export class FirebaseMessagingService {
         { merge: true }
       );
 
+      // ✅ AGGIUNTO: Salva anche in userKeys collection
+      const userKeysRef = doc(db, "userKeys", userKeys.userId);
+      await setDoc(userKeysRef, {
+        userId: userKeys.userId,
+        publicKey: userKeys.publicKey,
+        encryptedPrivateKey: userKeys.encryptedPrivateKey,
+        iv: userKeys.iv,
+        salt: userKeys.salt,
+        updatedAt: serverTimestamp(),
+      });
+
       console.log("✅ Chiavi salvate nel database");
     } catch (error) {
       console.error("Errore nel salvataggio delle chiavi:", error);
@@ -50,15 +61,15 @@ export class FirebaseMessagingService {
    */
   async loadUserKeys(userId: string): Promise<UserKeys | null> {
     try {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
+      const userKeysRef = doc(db, "userKeys", userId);
+      const userKeysSnap = await getDoc(userKeysRef);
 
-      if (!userSnap.exists()) {
+      if (!userKeysSnap.exists()) {
         console.log("Chiavi non trovate nel database");
         return null;
       }
 
-      const data = userSnap.data();
+      const data = userKeysSnap.data();
       return {
         userId: data.userId,
         publicKey: data.publicKey,
@@ -98,99 +109,139 @@ export class FirebaseMessagingService {
   }
 
   /**
+   * Ottiene un documento utente per UID
+   */
+  async getUserDoc(userId: string): Promise<any | null> {
+    try {
+      const userRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        console.error("❌ Utente non trovato:", userId);
+        return null;
+      }
+
+      return {
+        id: userSnap.id,
+        ...userSnap.data(),
+      };
+    } catch (error) {
+      console.error("Errore nel recupero utente:", error);
+      return null;
+    }
+  }
+
+  /**
    * Crea o recupera una chat diretta tra due utenti
    */
   async getOrCreateDirectChat(
-    currentUserId: string,
-    otherUserId: string
+    userId1: string,
+    userId2: string
   ): Promise<string> {
     try {
+      console.log("🔍 Cerco chat tra:", userId1, "e", userId2);
+
       // Cerca chat esistente
       const chatsRef = collection(db, "chats");
       const q = query(
         chatsRef,
-        where("participants", "array-contains", currentUserId),
-        where("type", "==", "direct")
+        where("participants", "array-contains", userId1),
+        where("isGroup", "==", false)
       );
 
-      const querySnapshot = await getDocs(q);
+      const snapshot = await getDocs(q);
 
-      // Verifica se esiste già una chat con questo utente
-      for (const docSnap of querySnapshot.docs) {
-        const participants = docSnap.data().participants;
-        if (participants.includes(otherUserId)) {
-          return docSnap.id;
+      // Trova chat con entrambi i partecipanti
+      let existingChat: any = null;
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.participants?.includes(userId2)) {
+          existingChat = { id: docSnap.id, ...data };
         }
-      }
-
-      // Crea nuova chat
-      let currentUserDoc = await getDoc(doc(db, "users", currentUserId));
-      const otherUserDoc = await getDoc(doc(db, "users", otherUserId));
-
-      // Se il documento dell'utente corrente non esiste (vecchi account),
-      // crealo al volo usando le informazioni disponibili da Auth
-      if (!currentUserDoc.exists()) {
-        const authCurrentUser = auth.currentUser;
-        if (!authCurrentUser || authCurrentUser.uid !== currentUserId) {
-          throw new Error("Utente corrente non valido");
-        }
-
-        await setDoc(
-          doc(db, "users", currentUserId),
-          {
-            email: authCurrentUser.email,
-            displayName:
-              authCurrentUser.displayName ||
-              authCurrentUser.email?.split("@")[0] ||
-              "User",
-            createdAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        currentUserDoc = await getDoc(doc(db, "users", currentUserId));
-      }
-
-      if (!otherUserDoc.exists()) {
-        throw new Error("Utenti non trovati");
-      }
-
-      const currentUserData = currentUserDoc.data()!;
-      const otherUserData = otherUserDoc.data();
-
-      // Firestore non accetta undefined: usa fallback sicuri
-      const currentName =
-        currentUserData.displayName || currentUserData.email || "User";
-      const otherName =
-        otherUserData.displayName || otherUserData.email || "User";
-      const currentEmail = currentUserData.email || "";
-      const otherEmail = otherUserData.email || "";
-      const currentPk = currentUserData.publicKey || "";
-      const otherPk = otherUserData.publicKey || "";
-
-      const newChatRef = await addDoc(collection(db, "chats"), {
-        participants: [currentUserId, otherUserId],
-        participantsData: {
-          [currentUserId]: {
-            name: currentName,
-            email: currentEmail,
-            publicKey: currentPk,
-          },
-          [otherUserId]: {
-            name: otherName,
-            email: otherEmail,
-            publicKey: otherPk,
-          },
-        },
-        type: "direct",
-        lastMessage: "",
-        lastMessageTimestamp: serverTimestamp(),
-        createdAt: serverTimestamp(),
       });
 
-      return newChatRef.id;
+      if (existingChat) {
+        console.log("♻️ Chat esistente trovata:", existingChat.id);
+
+        // ✅ Verifica se ha le chiavi pubbliche
+        if (
+          !existingChat.publicKeys ||
+          !existingChat.publicKeys[userId1] ||
+          !existingChat.publicKeys[userId2]
+        ) {
+          console.log("⚠️ Chat senza chiavi pubbliche, le aggiungo ora...");
+
+          // Recupera le chiavi pubbliche degli utenti
+          const user1Doc = await this.getUserDoc(userId1);
+          const user2Doc = await this.getUserDoc(userId2);
+
+          if (!user1Doc?.publicKey || !user2Doc?.publicKey) {
+            console.error("❌ Chiavi pubbliche mancanti!");
+            console.log("User1 publicKey:", !!user1Doc?.publicKey);
+            console.log("User2 publicKey:", !!user2Doc?.publicKey);
+            throw new Error(
+              "Le chiavi pubbliche degli utenti non sono disponibili. Assicurati che entrambi abbiano generato le chiavi."
+            );
+          }
+
+          const chatRef = doc(db, "chats", existingChat.id);
+          await updateDoc(chatRef, {
+            publicKeys: {
+              [userId1]: user1Doc.publicKey,
+              [userId2]: user2Doc.publicKey,
+            },
+          });
+          console.log("✅ Chiavi pubbliche aggiunte alla chat esistente");
+        }
+
+        return existingChat.id;
+      }
+
+      // ✅ Crea nuova chat CON le chiavi pubbliche
+      console.log("➕ Creazione nuova chat tra:", userId1, "e", userId2);
+
+      // Recupera i documenti degli utenti per ottenere le chiavi pubbliche
+      const user1Doc = await this.getUserDoc(userId1);
+      const user2Doc = await this.getUserDoc(userId2);
+
+      if (!user1Doc || !user2Doc) {
+        throw new Error("Uno o entrambi gli utenti non trovati");
+      }
+
+      // Recupera le chiavi pubbliche
+      const publicKey1 = user1Doc.publicKey;
+      const publicKey2 = user2Doc.publicKey;
+
+      if (!publicKey1 || !publicKey2) {
+        console.error("❌ Chiavi pubbliche mancanti!");
+        console.log("User1 publicKey:", !!publicKey1);
+        console.log("User2 publicKey:", !!publicKey2);
+        throw new Error(
+          "Le chiavi pubbliche degli utenti non sono disponibili. Assicurati che entrambi abbiano generato le chiavi."
+        );
+      }
+
+      console.log("✅ Chiavi pubbliche recuperate per entrambi gli utenti");
+
+      const newChat = {
+        participants: [userId1, userId2],
+        isGroup: false,
+        createdAt: serverTimestamp(),
+        lastMessage: "",
+        timestamp: serverTimestamp(),
+        publicKeys: {
+          [userId1]: publicKey1,
+          [userId2]: publicKey2,
+        },
+      };
+
+      const chatDocRef = await addDoc(chatsRef, newChat);
+      console.log("✅ Nuova chat creata con ID:", chatDocRef.id);
+      console.log("✅ PublicKeys salvate:", Object.keys(newChat.publicKeys));
+
+      return chatDocRef.id;
     } catch (error) {
-      console.error("Errore nella creazione/recupero chat:", error);
+      console.error("❌ Errore in getOrCreateDirectChat:", error);
       throw error;
     }
   }
@@ -241,10 +292,10 @@ export class FirebaseMessagingService {
           online: false,
           participants: data.participants || [],
           publicKeys: data.publicKeys || {},
-          isGroup: data.isGroup || false, // ✅ AGGIUNTO
-          lastMessageData: data.lastMessageData || null, // ✅ AGGIUNTO
-          email: "", // ✅ AGGIUNTO se serve
-          createdAt: data.createdAt || null, // ✅ AGGIUNTO se serve
+          isGroup: data.isGroup || false,
+          lastMessageData: data.lastMessageData || null,
+          email: "",
+          createdAt: data.createdAt || null,
         });
       }
 
@@ -386,28 +437,6 @@ export class FirebaseMessagingService {
       };
     } catch (error) {
       console.error("Errore nella ricerca utente:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Ottiene un documento utente per UID
-   */
-  async getUserDoc(userId: string): Promise<any | null> {
-    try {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        return null;
-      }
-
-      return {
-        id: userSnap.id,
-        ...userSnap.data(),
-      };
-    } catch (error) {
-      console.error("Errore nel recupero utente:", error);
       return null;
     }
   }

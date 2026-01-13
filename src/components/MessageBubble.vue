@@ -18,66 +18,55 @@ defineProps<Props>();
           : 'border border-white/10 bg-white/5 text-slate-100'
       "
     >
-      <p class="text-sm">{{ message.text }}</p>
-      <div class="flex items-center justify-end gap-1 mt-1">
-        <p
+      <p class="text-sm whitespace-pre-wrap break-words">{{ message.text }}</p>
+      <div class="flex items-center justify-end gap-1.5 mt-1">
+        <span
           class="text-xs"
           :class="message.sent ? 'text-indigo-200' : 'text-slate-400'"
         >
           {{ message.timestamp }}
-        </p>
+        </span>
 
-        <!-- Status indicator per messaggi inviati -->
-        <svg
-          v-if="message.sent && message.status === 'sent'"
-          class="h-4 w-4 text-indigo-200"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
+        <!-- ✅ Status indicators stile WhatsApp -->
+        <span v-if="message.sent" class="flex items-center">
+          <!-- Sent (singolo check) -->
+          <svg
+            v-if="message.status === 'sent'"
+            class="h-4 w-4 text-indigo-200"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
 
-        <svg
-          v-if="message.sent && message.status === 'delivered'"
-          class="h-4 w-4 text-indigo-200"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
+          <!-- Delivered (doppio check grigio) -->
+          <svg
+            v-else-if="message.status === 'delivered'"
+            class="h-4 w-4 text-indigo-200"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+          >
+            <polyline points="20 6 9 17 4 12" />
+            <polyline points="23 6 12 17" />
+          </svg>
 
-        <svg
-          v-if="message.sent && message.status === 'read'"
-          class="h-4 w-4 text-indigo-200"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M5 13l4 4L19 7"
-          />
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 13l4 4L23 7"
-          />
-        </svg>
+          <!-- Read (doppio check blu) -->
+          <svg
+            v-else-if="message.status === 'read'"
+            class="h-4 w-4 text-blue-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+          >
+            <polyline points="20 6 9 17 4 12" />
+            <polyline points="23 6 12 17" />
+          </svg>
+        </span>
       </div>
 
       <!-- Indicatore crittografia (visibile on hover) -->
@@ -85,15 +74,17 @@ defineProps<Props>();
         class="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
         title="Messaggio cifrato end-to-end"
       >
-        <svg
-          class="h-3 w-3 text-green-400"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"
-          />
-        </svg>
+        <div class="bg-slate-900 rounded-full p-0.5">
+          <svg
+            class="h-3 w-3 text-green-400"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"
+            />
+          </svg>
+        </div>
       </div>
     </div>
   </div>
