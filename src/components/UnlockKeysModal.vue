@@ -138,7 +138,7 @@ function handleClose() {
         <!-- Info Box -->
         <div class="rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-3">
           <div class="flex gap-3">
-            <svg class="h-5 w-5 flex-shrink-0 text-blue-400 mt-0.5" fill="none" stroke="currentColor"
+            <svg class="h-5 w-5 shrink-0 text-blue-400 mt-0.5" fill="none" stroke="currentColor"
                  viewBox="0 0 24 24">
               <path
                   stroke-linecap="round"

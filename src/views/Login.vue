@@ -293,7 +293,7 @@ async function signInWithGoogle() {
               class="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
           >
             <div class="flex items-center gap-2">
-              <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                     stroke-linecap="round"
                     stroke-linejoin="round"

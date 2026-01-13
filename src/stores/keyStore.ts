@@ -1,8 +1,8 @@
 // src/stores/keyStore.ts
 
-import { ref } from 'vue';
+import {ref} from 'vue';
 import cryptoService from '../services/cryptoService';
-import type { UserKeys } from '../types/chat.types';
+import type {UserKeys} from '../types/chat.types';
 
 class KeyStore {
     private currentPrivateKey = ref<CryptoKey | null>(null);
@@ -30,7 +30,7 @@ class KeyStore {
             const privateKeyJwk = await cryptoService.exportPrivateKey(keyPair.privateKey);
 
             // Cifra la chiave privata con la Master Key
-            const { encryptedKey, iv } = await cryptoService.encryptPrivateKey(
+            const {encryptedKey, iv} = await cryptoService.encryptPrivateKey(
                 privateKeyJwk,
                 masterKey
             );

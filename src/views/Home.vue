@@ -21,7 +21,7 @@ const router = useRouter();
 
         <h1 class="text-5xl font-bold tracking-tight">
           Comunica senza limiti con
-          <span class="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+          <span class="bg-linear-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
             Dove
           </span>
         </h1>
@@ -134,7 +134,7 @@ const router = useRouter();
 
       <!-- CTA Section -->
       <div
-          class="mx-auto max-w-3xl rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-cyan-500/10 p-8 text-center">
+          class="mx-auto max-w-3xl rounded-2xl border border-indigo-500/20 bg-linear-to-br from-indigo-500/10 to-cyan-500/10 p-8 text-center">
         <h2 class="text-2xl font-semibold">Pronto a iniziare?</h2>
         <p class="mt-3 text-slate-300">
           Crea il tuo account gratuitamente e scopri un nuovo modo di comunicare.

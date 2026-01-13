@@ -1,22 +1,22 @@
 // src/services/firebaseMessaging.ts
 
 import {
+    addDoc,
     collection,
     doc,
-    addDoc,
-    setDoc,
     getDoc,
     getDocs,
-    query,
-    where,
-    orderBy,
     onSnapshot,
+    orderBy,
+    query,
     serverTimestamp,
+    setDoc,
     Timestamp,
-    updateDoc
+    updateDoc,
+    where
 } from 'firebase/firestore';
-import { db } from '../firebase';
-import type { UserKeys, Chat } from '../types/chat.types';
+import {db} from '../firebase';
+import type {Chat, UserKeys} from '../types/chat.types';
 
 export class FirebaseMessagingService {
     /**
@@ -237,15 +237,13 @@ export class FirebaseMessagingService {
         const messagesRef = collection(db, 'chats', chatId, 'messages');
         const q = query(messagesRef, orderBy('timestamp', 'asc'));
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        return onSnapshot(q, (snapshot) => {
             const messages = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             callback(messages);
         });
-
-        return unsubscribe;
     }
 
     /**

@@ -18,8 +18,7 @@ const {
   currentMessages,
   selectedChatId,
   sendEncryptedMessage,
-  selectChat,
-  loadChats
+  selectChat
 } = useEncryptedChat();
 
 // State
@@ -93,7 +92,8 @@ const filteredChats = computed(() => {
 });
 
 onMounted(() => {
-  loadChats(mockChats);
+  // Carica le chat mock direttamente nello stato
+  chats.value = mockChats;
 
   // Verifica se le chiavi sono sbloccate
   if (!isKeysUnlocked.value) {
@@ -136,8 +136,7 @@ async function sendMessage() {
 
     await sendEncryptedMessage(
         selectedChat.value.id,
-        message.value,
-        recipientPublicKey
+        message.value
     );
 
     message.value = '';
@@ -150,7 +149,7 @@ async function sendMessage() {
 async function handleLogout() {
   keyStore.lockKeys();
   await logout();
-  router.push('/login');
+  await router.push('/login');
 }
 
 function openProfileModal() {
@@ -169,22 +168,22 @@ function handleKeysUnlocked() {
 <template>
   <div class="flex h-screen w-screen overflow-hidden bg-slate-950">
     <!-- Sidebar Sinistra - Lista Chat -->
-    <aside class="flex flex-col border-r border-white/10 bg-slate-900/50 w-80 min-w-[280px] max-w-md">
+    <aside class="flex flex-col border-r border-white/10 bg-slate-900/50 w-80 min-w-70 max-w-md">
       <!-- User Header -->
       <div class="flex items-center justify-between border-b border-white/10 p-3">
         <button
             @click="openProfileModal"
             class="flex items-center gap-2 min-w-0 hover:bg-white/5 rounded-lg p-1 -ml-1 transition-colors"
         >
-          <div
-              class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white text-sm"
+          <span
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white text-sm"
           >
             {{ displayName.charAt(0).toUpperCase() }}
-          </div>
-          <p class="text-sm font-semibold text-slate-100 truncate">
+          </span>
+          <span class="text-sm font-semibold text-slate-100 truncate">
             {{ displayName }}
-          </p>
-          <svg class="h-4 w-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          </span>
+          <svg class="h-4 w-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -194,9 +193,9 @@ function handleKeysUnlocked() {
           </svg>
         </button>
 
-        <div class="flex items-center gap-1 flex-shrink-0">
+        <div class="flex items-center gap-1 shrink-0">
           <!-- Indicatore stato crittografia -->
-          <div
+          <span
               :class="isKeysUnlocked ? 'text-green-400' : 'text-yellow-400'"
               :title="isKeysUnlocked ? 'Crittografia attiva' : 'Crittografia bloccata'"
           >
@@ -216,7 +215,7 @@ function handleKeysUnlocked() {
                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-          </div>
+          </span>
 
           <button
               @click="handleLogout"
@@ -279,7 +278,7 @@ function handleKeysUnlocked() {
           v-if="!selectedChat"
           class="flex h-full flex-col items-center justify-center space-y-4 text-center px-4"
       >
-        <div class="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500/20">
+        <span class="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500/20">
           <svg class="h-10 w-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
                 stroke-linecap="round"
@@ -288,13 +287,13 @@ function handleKeysUnlocked() {
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
             />
           </svg>
-        </div>
+        </span>
         <div>
           <h2 class="text-xl font-semibold text-slate-200">Seleziona una chat</h2>
           <p class="mt-2 text-sm text-slate-400">
             Scegli una conversazione dalla lista per iniziare a chattare
           </p>
-          <p class="mt-1 text-xs text-green-400 flex items-center justify-center gap-1">
+          <span class="mt-1 text-xs text-green-400 flex items-center justify-center gap-1">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                   stroke-linecap="round"
@@ -304,7 +303,7 @@ function handleKeysUnlocked() {
               />
             </svg>
             Protetto con crittografia end-to-end
-          </p>
+          </span>
         </div>
       </div>
 
@@ -313,15 +312,15 @@ function handleKeysUnlocked() {
         <!-- Header Chat -->
         <header class="flex items-center justify-between border-b border-white/10 p-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div
-                class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-semibold text-white"
+            <span
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
                 :class="selectedChat.isGroup ? 'bg-purple-600' : 'bg-indigo-600'"
             >
               {{ selectedChat.avatar }}
-            </div>
-            <div class="min-w-0">
-              <p class="font-semibold text-slate-100 truncate">{{ selectedChat.name }}</p>
-              <p class="text-xs text-slate-400 flex items-center gap-1">
+            </span>
+            <span class="min-w-0">
+              <span class="font-semibold text-slate-100 truncate block">{{ selectedChat.name }}</span>
+              <span class="text-xs text-slate-400 flex items-center gap-1">
                 <svg class="h-3 w-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                       stroke-linecap="round"
@@ -331,11 +330,11 @@ function handleKeysUnlocked() {
                   />
                 </svg>
                 Crittografia end-to-end
-              </p>
-            </div>
+              </span>
+            </span>
           </div>
 
-          <div class="flex items-center gap-1 flex-shrink-0">
+          <div class="flex items-center gap-1 shrink-0">
             <button
                 class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-slate-200"
                 title="Chiamata vocale"
@@ -392,7 +391,7 @@ function handleKeysUnlocked() {
           <form @submit.prevent="sendMessage" class="flex items-center gap-3">
             <button
                 type="button"
-                class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-slate-200 flex-shrink-0"
+                class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-slate-200 shrink-0"
                 title="Allega file"
             >
               <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -415,7 +414,7 @@ function handleKeysUnlocked() {
             <button
                 type="submit"
                 :disabled="!message.trim()"
-                class="rounded-xl bg-indigo-600 p-3 text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 flex-shrink-0"
+                class="rounded-xl bg-indigo-600 p-3 text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
                 title="Invia"
             >
               <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

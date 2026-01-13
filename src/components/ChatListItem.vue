@@ -22,7 +22,7 @@ function handleClick() {
       class="flex cursor-pointer items-center gap-3 border-b border-white/5 p-4 transition-colors hover:bg-white/5"
       :class="{ 'bg-white/10': isSelected }"
   >
-    <div class="relative flex-shrink-0">
+    <div class="relative shrink-0">
       <div
           class="flex h-12 w-12 items-center justify-center rounded-full font-semibold text-white"
           :class="chat.isGroup ? 'bg-purple-600' : 'bg-indigo-600'"
@@ -38,14 +38,14 @@ function handleClick() {
     <div class="flex-1 min-w-0">
       <div class="flex items-center justify-between">
         <p class="truncate font-semibold text-slate-100">{{ chat.name }}</p>
-        <span class="text-xs text-slate-400 ml-2 flex-shrink-0">{{ chat.timestamp }}</span>
+        <span class="text-xs text-slate-400 ml-2 shrink-0">{{ chat.timestamp }}</span>
       </div>
       <p class="truncate text-sm text-slate-400">{{ chat.lastMessage }}</p>
     </div>
 
     <div
         v-if="chat.unread > 0"
-        class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white flex-shrink-0"
+        class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white shrink-0"
     >
       {{ chat.unread }}
     </div>

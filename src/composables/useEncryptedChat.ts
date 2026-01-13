@@ -1,5 +1,3 @@
-// src/composables/useEncryptedChat.ts - VERSIONE FIREBASE
-
 import {ref, computed, onUnmounted} from 'vue';
 import {firebaseMessaging} from '../services/firebaseMessaging';
 import {auth} from '../firebase';
@@ -48,34 +46,37 @@ export function useEncryptedChat() {
         chatId: string,
         text: string
     ): Promise<void> {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            console.error('❌ Utente non autenticato');
+            throw new Error('Utente non autenticato');
+        }
+
+        const chat = chats.value.find(c => c.id === chatId);
+        if (!chat) {
+            console.error('❌ Chat non trovata');
+            throw new Error('Chat non trovata');
+        }
+
+        console.log('📤 Invio messaggio:', {chatId, text});
+
+        // MODALITÀ MOCK: Invia senza crittografia per ora
+        // TODO: Riattivare crittografia con chiavi reali
+
+        const recipientId = chat.participants?.find(id => id !== currentUser.uid);
+        if (!recipientId) {
+            console.error('❌ Destinatario non trovato');
+            throw new Error('Destinatario non trovato');
+        }
+
+        // Simula dati cifrati (in realtà sono mock)
+        const mockEncrypted = {
+            encryptedContent: btoa(text), // Base64 del testo
+            encryptedAesKey: 'mock-aes-key',
+            iv: 'mock-iv'
+        };
+
         try {
-            const currentUser = auth.currentUser;
-            if (!currentUser) {
-                throw new Error('Utente non autenticato');
-            }
-
-            const chat = chats.value.find(c => c.id === chatId);
-            if (!chat) {
-                throw new Error('Chat non trovata');
-            }
-
-            console.log('📤 Invio messaggio:', {chatId, text});
-
-            // MODALITÀ MOCK: Invia senza crittografia per ora
-            // TODO: Riattivare crittografia con chiavi reali
-
-            const recipientId = chat.participants?.find(id => id !== currentUser.uid);
-            if (!recipientId) {
-                throw new Error('Destinatario non trovato');
-            }
-
-            // Simula dati cifrati (in realtà sono mock)
-            const mockEncrypted = {
-                encryptedContent: btoa(text), // Base64 del testo
-                encryptedAesKey: 'mock-aes-key',
-                iv: 'mock-iv'
-            };
-
             // Invia a Firebase
             await firebaseMessaging.sendMessage(
                 chatId,
@@ -89,7 +90,6 @@ export function useEncryptedChat() {
             console.log('✅ Messaggio inviato a Firebase');
 
             // Nota: Il messaggio apparirà tramite il listener real-time
-
         } catch (error) {
             console.error('❌ Errore nell\'invio del messaggio:', error);
             throw error;
@@ -108,7 +108,7 @@ export function useEncryptedChat() {
                 chat.unread = 0;
             }
 
-            // Disconnetti listener precedente se esiste
+            // Disconnect previous listener if exists
             const previousUnsubscriber = messageUnsubscribers.value.get(chatId);
             if (previousUnsubscriber) {
                 previousUnsubscriber();
@@ -133,6 +133,38 @@ export function useEncryptedChat() {
     }
 
     /**
+     * Decifra un messaggio (MOCK: decodifica base64)
+     */
+    function decryptMessage(encryptedContent: string): string {
+        try {
+            return atob(encryptedContent);
+        } catch {
+            return 'Messaggio non decifrabile';
+        }
+    }
+
+    /**
+     * Converte messaggi Firebase in formato app
+     */
+    async function convertFirebaseMessages(
+        chatId: string,
+        firebaseMessages: any[]
+    ): Promise<Message[]> {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return [];
+
+        return firebaseMessages.map((msg) => ({
+            id: msg.id,
+            chatId,
+            senderId: msg.senderId,
+            text: decryptMessage(msg.encryptedContent),
+            sent: msg.senderId === currentUser.uid,
+            timestamp: formatTimestamp(msg.timestamp),
+            status: msg.status || 'delivered'
+        }));
+    }
+
+    /**
      * Carica messaggi di una chat da Firebase
      */
     async function loadChatMessages(chatId: string): Promise<void> {
@@ -143,29 +175,7 @@ export function useEncryptedChat() {
             console.log('📥 Caricamento messaggi per chat:', chatId);
 
             const firebaseMessages = await firebaseMessaging.loadChatMessages(chatId);
-
-            // Converti messaggi Firebase in formato app
-            const chatMessages: Message[] = await Promise.all(
-                firebaseMessages.map(async (msg) => {
-                    // MOCK: Decifra (in realtà decodifica base64)
-                    let text = '';
-                    try {
-                        text = atob(msg.encryptedContent); // Mock decryption
-                    } catch {
-                        text = 'Messaggio non decifrabile';
-                    }
-
-                    return {
-                        id: msg.id,
-                        chatId,
-                        senderId: msg.senderId,
-                        text,
-                        sent: msg.senderId === currentUser.uid,
-                        timestamp: formatTimestamp(msg.timestamp),
-                        status: msg.status || 'delivered'
-                    };
-                })
-            );
+            const chatMessages = await convertFirebaseMessages(chatId, firebaseMessages);
 
             messages.value.set(chatId, chatMessages);
             console.log(`✅ ${chatMessages.length} messaggi caricati`);
@@ -183,27 +193,7 @@ export function useEncryptedChat() {
             const currentUser = auth.currentUser;
             if (!currentUser) return;
 
-            const chatMessages: Message[] = await Promise.all(
-                firebaseMessages.map(async (msg) => {
-                    let text = '';
-                    try {
-                        text = atob(msg.encryptedContent); // Mock decryption
-                    } catch {
-                        text = 'Messaggio non decifrabile';
-                    }
-
-                    return {
-                        id: msg.id,
-                        chatId,
-                        senderId: msg.senderId,
-                        text,
-                        sent: msg.senderId === currentUser.uid,
-                        timestamp: formatTimestamp(msg.timestamp),
-                        status: msg.status || 'delivered'
-                    };
-                })
-            );
-
+            const chatMessages = await convertFirebaseMessages(chatId, firebaseMessages);
             messages.value.set(chatId, chatMessages);
 
             // Aggiorna ultimo messaggio nella chat
@@ -230,15 +220,17 @@ export function useEncryptedChat() {
      * Crea una nuova chat con un utente
      */
     async function createChatWithUser(otherUserEmail: string): Promise<string | null> {
-        try {
-            const currentUser = auth.currentUser;
-            if (!currentUser) {
-                throw new Error('Utente non autenticato');
-            }
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            console.error('❌ Utente non autenticato');
+            throw new Error('Utente non autenticato');
+        }
 
+        try {
             // Cerca l'utente per email
             const otherUser = await firebaseMessaging.searchUserByEmail(otherUserEmail);
             if (!otherUser) {
+                console.error('❌ Utente non trovato');
                 throw new Error('Utente non trovato');
             }
 
@@ -254,7 +246,7 @@ export function useEncryptedChat() {
             return chatId;
         } catch (error) {
             console.error('Errore nella creazione della chat:', error);
-            return null;
+            throw error;
         }
     }
 
