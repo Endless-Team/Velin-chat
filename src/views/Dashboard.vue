@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useAuth } from "../composables/useAuth";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useEncryptedChat } from "../composables/useEncryptedChat";
 import { keyStore } from "../stores/keyStore";
 import ChatListItem from "../components/ChatListItem.vue";
 import ProfileEditModal from "../components/ProfileEditModal.vue";
 import UnlockKeysModal from "../components/UnlockKeysModal.vue";
 import NewChatModal from "../components/NewChatModal.vue";
-// ❌ RIMOSSO: import ChatView from "./Chat.vue";
 
 const router = useRouter();
+const route = useRoute();
 const { user, logout } = useAuth();
 const { chats, selectedChatId, selectChat, loadUserChats, createChatWithUser } =
   useEncryptedChat();
@@ -20,9 +20,11 @@ const searchQuery = ref("");
 const showProfileModal = ref(false);
 const showUnlockModal = ref(false);
 const showNewChatModal = ref(false);
-// ❌ RIMOSSO: const showChatView = ref(false);
 const isCreatingChat = ref(false);
 const isKeysUnlocked = computed(() => keyStore.getIsUnlocked());
+
+// ✅ AGGIUNTO: Computed per sapere se c'è una chat aperta
+const isChatOpen = computed(() => route.name === "chat" && route.params.chatId);
 
 const displayName = computed(() => {
   return user.value?.displayName || user.value?.email?.split("@")[0] || "User";
@@ -36,7 +38,6 @@ const filteredChats = computed(() => {
 });
 
 onMounted(async () => {
-  // Carica chat reali da Firebase
   await loadUserChats();
 
   if (!isKeysUnlocked.value) {
@@ -50,10 +51,7 @@ async function handleSelectChat(chatId: string) {
     return;
   }
 
-  // ✅ Prima seleziona la chat
   await selectChat(chatId);
-
-  // ✅ Poi naviga alla route
   await router.push(`/chat/${chatId}`);
 }
 
@@ -76,7 +74,6 @@ async function handleUserSelected(user: any) {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // ✅ Naviga alla route invece di usare showChatView
       await router.push(`/chat/${chatId}`);
     }
   } catch (error: any) {
@@ -86,8 +83,6 @@ async function handleUserSelected(user: any) {
     isCreatingChat.value = false;
   }
 }
-
-// ❌ RIMOSSO: function handleBackToDashboard() - non serve più
 
 async function handleLogout() {
   keyStore.lockKeys();
@@ -111,16 +106,17 @@ function openNewChatModal() {
   showNewChatModal.value = true;
 }
 
-function handleKeysUnlocked() {
+async function handleKeysUnlocked() {
   showUnlockModal.value = false;
+
+  console.log("🔓 Chiavi sbloccate, ricarico chat con messaggi decifrati...");
+  await loadUserChats();
 }
 </script>
 
 <template>
   <div class="flex h-screen w-screen overflow-hidden bg-slate-950">
-    <!-- ❌ RIMOSSO: <ChatView v-if="showChatView && selectedChat" @back="handleBackToDashboard" /> -->
-
-    <!-- Sidebar Sinistra - Lista Chat -->
+    <!-- Sidebar Sinistra - Lista Chat (SEMPRE VISIBILE) -->
     <aside
       class="flex flex-col border-r border-white/10 bg-slate-900/50 w-80 min-w-70 max-w-md"
     >
@@ -296,9 +292,14 @@ function handleKeysUnlocked() {
       </div>
     </aside>
 
-    <!-- Area Messaggi Principale - Empty State -->
+    <!-- ✅ Area Principale: Empty State O Chat Component -->
     <main class="flex flex-1 flex-col min-w-0">
+      <!-- ✅ Mostra RouterView (Chat.vue) se c'è una chat aperta -->
+      <RouterView v-if="isChatOpen" />
+
+      <!-- ✅ Altrimenti mostra Empty State -->
       <div
+        v-else
         class="flex h-full flex-col items-center justify-center space-y-4 text-center px-4"
       >
         <span

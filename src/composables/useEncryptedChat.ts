@@ -24,6 +24,58 @@ export function useEncryptedChat() {
   });
 
   /**
+   * Decifra l'ultimo messaggio di una chat
+   */
+  async function decryptLastMessage(chat: Chat): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return "🔒 Messaggio cifrato";
+
+    const privateKey = keyStore.getPrivateKey();
+    if (!privateKey) return "🔒 Sblocca per vedere";
+
+    try {
+      if (!chat.lastMessageData) {
+        return chat.lastMessage || "";
+      }
+
+      const isSentByMe = chat.lastMessageData.senderId === currentUser.uid;
+
+      let encryptedData: EncryptedMessage;
+
+      if (isSentByMe) {
+        encryptedData = {
+          encryptedContent: chat.lastMessageData.encryptedContentSender,
+          encryptedAesKey: chat.lastMessageData.encryptedAesKeySender,
+          iv: chat.lastMessageData.ivSender,
+        };
+      } else {
+        encryptedData = {
+          encryptedContent: chat.lastMessageData.encryptedContent,
+          encryptedAesKey: chat.lastMessageData.encryptedAesKey,
+          iv: chat.lastMessageData.iv,
+        };
+      }
+
+      if (
+        encryptedData.encryptedContent &&
+        encryptedData.encryptedAesKey &&
+        encryptedData.iv
+      ) {
+        const decrypted = await messageEncryptionService.decryptMessage(
+          encryptedData,
+          privateKey
+        );
+        return decrypted.content;
+      }
+
+      return "🔒 Messaggio cifrato";
+    } catch (error) {
+      console.error("Errore decifratura ultimo messaggio:", error);
+      return "🔒 Errore decifratura";
+    }
+  }
+
+  /**
    * Carica le chat dell'utente da Firebase
    */
   async function loadUserChats(): Promise<void> {
@@ -36,6 +88,17 @@ export function useEncryptedChat() {
 
       console.log("📥 Caricamento chat da Firebase...");
       const userChats = await firebaseMessaging.loadUserChats(currentUser.uid);
+
+      // Decifra l'ultimo messaggio di ogni chat
+      if (keyStore.getIsUnlocked()) {
+        console.log("🔓 Decifratura ultimi messaggi...");
+        for (const chat of userChats) {
+          if (chat.lastMessageData) {
+            chat.lastMessage = await decryptLastMessage(chat);
+          }
+        }
+      }
+
       chats.value = userChats;
       console.log(`✅ ${userChats.length} chat caricate`);
     } catch (error) {
@@ -71,7 +134,7 @@ export function useEncryptedChat() {
     let recipientPublicKeyString = chat.publicKeys?.[recipientId];
     let senderPublicKeyString = chat.publicKeys?.[currentUser.uid];
 
-    // ✅ FALLBACK: Se le chiavi non sono nella chat, recuperale dal keyStore
+    // FALLBACK: Se le chiavi non sono nella chat, recuperale dal keyStore
     if (!senderPublicKeyString) {
       console.warn("⚠️ Chiave pubblica del mittente non in chat, uso keyStore");
       const myPublicKey = keyStore.getPublicKey();
@@ -202,18 +265,15 @@ export function useEncryptedChat() {
       const isSentByMe = msg.senderId === currentUser.uid;
 
       try {
-        // ✅ Scegli la versione cifrata corretta
         let encryptedData: EncryptedMessage;
 
         if (isSentByMe) {
-          // Se l'ho inviato io, uso la versione cifrata per il mittente
           encryptedData = {
             encryptedContent: msg.encryptedContentSender,
             encryptedAesKey: msg.encryptedAesKeySender,
             iv: msg.ivSender,
           };
         } else {
-          // Se l'ho ricevuto, uso la versione cifrata per il destinatario
           encryptedData = {
             encryptedContent: msg.encryptedContent,
             encryptedAesKey: msg.encryptedAesKey,
@@ -221,7 +281,6 @@ export function useEncryptedChat() {
           };
         }
 
-        // ✅ Decifra con la mia chiave privata
         if (
           encryptedData.encryptedContent &&
           encryptedData.encryptedAesKey &&
@@ -233,7 +292,6 @@ export function useEncryptedChat() {
           );
           text = decrypted.content;
         } else if (msg.text) {
-          // Fallback per eventuali messaggi legacy
           text = msg.text;
         }
       } catch (e) {
@@ -303,7 +361,6 @@ export function useEncryptedChat() {
           chat.lastMessage = lastMsg.text;
           chat.timestamp = lastMsg.timestamp;
 
-          // Incrementa unread se non è la chat selezionata e non è mio
           if (selectedChatId.value !== chatId && !lastMsg.sent) {
             chat.unread++;
           }
@@ -325,20 +382,17 @@ export function useEncryptedChat() {
     }
 
     try {
-      // Verifica che l'utente esista
       const otherUserDoc = await firebaseMessaging.getUserDoc(otherUserId);
       if (!otherUserDoc) {
         console.error("❌ Utente non trovato");
         throw new Error("Utente non trovato");
       }
 
-      // Crea o recupera chat
       const chatId = await firebaseMessaging.getOrCreateDirectChat(
         currentUser.uid,
         otherUserId
       );
 
-      // Ricarica le chat
       await loadUserChats();
 
       return chatId;

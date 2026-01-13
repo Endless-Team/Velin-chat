@@ -206,35 +206,49 @@ export class FirebaseMessagingService {
         where("participants", "array-contains", userId)
       );
 
-      const querySnapshot = await getDocs(q);
-      const chats: Chat[] = [];
+      const snapshot = await getDocs(q);
+      const userChats: Chat[] = [];
 
-      querySnapshot.forEach((docSnap) => {
+      for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
-        const otherUserId = data.participants.find(
+
+        // Trova l'altro partecipante (per chat dirette)
+        const otherUserId = data.participants?.find(
           (id: string) => id !== userId
         );
-        const otherUserData = data.participantsData[otherUserId];
+        let chatName = "Chat";
+        let chatAvatar = "";
 
-        chats.push({
+        if (otherUserId && !data.isGroup) {
+          const otherUserDoc = await this.getUserDoc(otherUserId);
+          if (otherUserDoc) {
+            chatName =
+              otherUserDoc.displayName || otherUserDoc.email || "Utente";
+            chatAvatar = otherUserDoc.avatar || "";
+          }
+        } else if (data.isGroup) {
+          chatName = data.name || "Gruppo";
+          chatAvatar = data.avatar || "";
+        }
+
+        userChats.push({
           id: docSnap.id,
-          name: otherUserData?.name || "Unknown",
-          avatar: (otherUserData?.name || "U").substring(0, 2).toUpperCase(),
-          lastMessage: data.lastMessage || "Nessun messaggio",
-          timestamp: this.formatTimestamp(data.lastMessageTimestamp),
-          unread: 0, // TODO: implementare conteggio non letti
-          online: false, // TODO: implementare presenza
-          participants: data.participants,
-          publicKeys: {
-            [otherUserId]: otherUserData?.publicKey || "",
-          },
+          name: chatName,
+          avatar: chatAvatar,
+          lastMessage: data.lastMessage || "",
+          timestamp: this.formatTimestamp(data.timestamp),
+          unread: 0,
+          online: false,
+          participants: data.participants || [],
+          publicKeys: data.publicKeys || {},
+          isGroup: data.isGroup || false, // ✅ AGGIUNTO
+          lastMessageData: data.lastMessageData || null, // ✅ AGGIUNTO
+          email: "", // ✅ AGGIUNTO se serve
+          createdAt: data.createdAt || null, // ✅ AGGIUNTO se serve
         });
-      });
+      }
 
-      return chats.sort(() => {
-        // Ordina per timestamp più recente
-        return 0; // TODO: implementare ordinamento corretto
-      });
+      return userChats;
     } catch (error) {
       console.error("Errore nel caricamento delle chat:", error);
       return [];
@@ -248,11 +262,9 @@ export class FirebaseMessagingService {
     chatId: string,
     senderId: string,
     recipientId: string,
-    // Versione per il destinatario
     encryptedContent: string,
     encryptedAesKey: string,
     iv: string,
-    // Versione per il mittente
     encryptedContentSender: string,
     encryptedAesKeySender: string,
     ivSender: string
@@ -262,11 +274,9 @@ export class FirebaseMessagingService {
     await addDoc(messagesRef, {
       senderId,
       recipientId,
-      // Versione cifrata per il destinatario
       encryptedContent,
       encryptedAesKey,
       iv,
-      // Versione cifrata per il mittente
       encryptedContentSender,
       encryptedAesKeySender,
       ivSender,
@@ -274,11 +284,19 @@ export class FirebaseMessagingService {
       status: "sent",
     });
 
-    // Aggiorna ultimo messaggio nella chat
     const chatRef = doc(db, "chats", chatId);
     await updateDoc(chatRef, {
       lastMessage: "🔒 Messaggio cifrato",
       timestamp: serverTimestamp(),
+      lastMessageData: {
+        senderId,
+        encryptedContent,
+        encryptedAesKey,
+        iv,
+        encryptedContentSender,
+        encryptedAesKeySender,
+        ivSender,
+      },
     });
   }
 
