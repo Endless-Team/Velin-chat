@@ -2,13 +2,13 @@
 import cryptoService from './cryptoService';
 
 interface EncryptedMessage {
-    encryptedContent: string;
-    encryptedAesKey: string;
-    iv: string;
+  encryptedContent: string;
+  encryptedAesKey: string;
+  iv: string;
 }
 
 interface DecryptedMessage {
-    content: string;
+  content: string;
 }
 
 class MessageEncryptionService {
@@ -80,7 +80,7 @@ class MessageEncryptionService {
             return {
                 encryptedContent: cryptoService.arrayBufferToBase64(encryptedMessageBuffer),
                 encryptedAesKey: cryptoService.arrayBufferToBase64(encryptedAesKeyBuffer),
-                iv: cryptoService.arrayBufferToBase64(iv)
+                iv: cryptoService.arrayBufferToBase64(iv.buffer)
             };
         } catch (error) {
             console.error('Errore nella cifratura del messaggio:', error);

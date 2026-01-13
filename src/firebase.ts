@@ -6,13 +6,13 @@ import { getFirestore } from "firebase/firestore";
 
 // Configurazione Firebase (sostituisci con i tuoi dati dal Firebase Console)
 const firebaseConfig = {
-    apiKey: "AIzaSyDFAX9ndziscjdtGM_4dPAodPFC_Y0Wf3o",
-    authDomain: "velin-chats.firebaseapp.com",
-    projectId: "velin-chats",
-    storageBucket: "velin-chats.firebasestorage.app",
-    messagingSenderId: "957786615133",
-    appId: "1:957786615133:web:1065de500aa5f27abd0cb4",
-    measurementId: "G-QKF87TQS2V"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Inizializza Firebase
