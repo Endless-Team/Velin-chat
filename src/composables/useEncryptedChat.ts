@@ -68,18 +68,24 @@ export function useEncryptedChat() {
       throw new Error("Destinatario non trovato");
     }
 
-    // ✅ Recupera ENTRAMBE le chiavi pubbliche
-    const recipientPublicKeyString = chat.publicKeys?.[recipientId];
-    const senderPublicKeyString = chat.publicKeys?.[currentUser.uid];
+    let recipientPublicKeyString = chat.publicKeys?.[recipientId];
+    let senderPublicKeyString = chat.publicKeys?.[currentUser.uid];
+
+    // ✅ FALLBACK: Se le chiavi non sono nella chat, recuperale dal keyStore
+    if (!senderPublicKeyString) {
+      console.warn("⚠️ Chiave pubblica del mittente non in chat, uso keyStore");
+      const myPublicKey = keyStore.getPublicKey();
+      if (myPublicKey) {
+        senderPublicKeyString = JSON.stringify(myPublicKey);
+      } else {
+        console.error("❌ Chiave pubblica del mittente non trovata");
+        throw new Error("Chiave pubblica del mittente non trovata.");
+      }
+    }
 
     if (!recipientPublicKeyString) {
       console.error("❌ Chiave pubblica del destinatario non trovata");
       throw new Error("Chiave pubblica del destinatario non trovata.");
-    }
-
-    if (!senderPublicKeyString) {
-      console.error("❌ Chiave pubblica del mittente non trovata");
-      throw new Error("Chiave pubblica del mittente non trovata.");
     }
 
     let recipientPublicKeyJwk: JsonWebKey;
@@ -100,7 +106,6 @@ export function useEncryptedChat() {
       senderId: currentUser.uid,
     });
 
-    // ✅ Cifra il messaggio per ENTRAMBI
     const encryptedPayloads =
       await messageEncryptionService.encryptMessageForBoth(
         text,
@@ -109,22 +114,19 @@ export function useEncryptedChat() {
       );
 
     try {
-      // ✅ Invia entrambe le versioni cifrate
       await firebaseMessaging.sendMessage(
         chatId,
         currentUser.uid,
         recipientId,
-        // Versione per il destinatario
         encryptedPayloads.forRecipient.encryptedContent,
         encryptedPayloads.forRecipient.encryptedAesKey,
         encryptedPayloads.forRecipient.iv,
-        // Versione per il mittente
         encryptedPayloads.forSender.encryptedContent,
         encryptedPayloads.forSender.encryptedAesKey,
         encryptedPayloads.forSender.iv
       );
 
-      console.log("✅ Messaggio inviato a Firebase (doppia cifratura E2E)");
+      console.log("✅ Messaggio inviato (doppia cifratura E2E)");
     } catch (error) {
       console.error("❌ Errore nell'invio del messaggio:", error);
       throw error;
@@ -137,8 +139,8 @@ export function useEncryptedChat() {
   async function selectChat(chatId: string): Promise<void> {
     try {
       selectedChatId.value = chatId;
-
       const chat = chats.value.find((c) => c.id === chatId);
+
       if (chat) {
         chat.unread = 0;
       }
@@ -262,7 +264,6 @@ export function useEncryptedChat() {
       if (!currentUser) return;
 
       console.log("📥 Caricamento messaggi per chat:", chatId);
-
       const firebaseMessages = await firebaseMessaging.loadChatMessages(chatId);
       const chatMessages = await convertFirebaseMessages(
         chatId,
@@ -297,6 +298,7 @@ export function useEncryptedChat() {
       if (chatMessages.length > 0) {
         const lastMsg = chatMessages[chatMessages.length - 1];
         const chat = chats.value.find((c) => c.id === chatId);
+
         if (chat) {
           chat.lastMessage = lastMsg.text;
           chat.timestamp = lastMsg.timestamp;
@@ -315,9 +317,7 @@ export function useEncryptedChat() {
   /**
    * Crea una nuova chat con un utente usando l'UID direttamente
    */
-  async function createChatWithUser(
-    otherUserId: string
-  ): Promise<string | null> {
+  async function createChatWithUser(otherUserId: string): Promise<string> {
     const currentUser = auth.currentUser;
     if (!currentUser) {
       console.error("❌ Utente non autenticato");

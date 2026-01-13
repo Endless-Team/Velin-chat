@@ -1,4 +1,5 @@
 // @ts-ignore
+
 import cryptoService from "./cryptoService";
 
 interface EncryptedMessage {
@@ -157,31 +158,6 @@ class MessageEncryptionService {
   }
 
   /**
-   * Cifra un messaggio per più destinatari (chat di gruppo)
-   * @param message - Il testo del messaggio
-   * @param recipientsPublicKeys - Array di chiavi pubbliche dei destinatari
-   * @returns Array di messaggi cifrati, uno per ogni destinatario
-   */
-  async encryptMessageForGroup(
-    message: string,
-    recipientsPublicKeys: JsonWebKey[]
-  ): Promise<EncryptedMessage[]> {
-    try {
-      const encryptedMessages: EncryptedMessage[] = [];
-
-      for (const publicKey of recipientsPublicKeys) {
-        const encrypted = await this.encryptMessage(message, publicKey);
-        encryptedMessages.push(encrypted);
-      }
-
-      return encryptedMessages;
-    } catch (error) {
-      console.error("Errore nella cifratura del messaggio di gruppo:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Cifra un messaggio per due destinatari (mittente e destinatario)
    * Ritorna due versioni cifrate dello stesso messaggio
    * @param message - Il testo del messaggio da cifrare
@@ -216,6 +192,31 @@ class MessageEncryptionService {
         "Errore nella cifratura del messaggio per entrambi:",
         error
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Cifra un messaggio per più destinatari (chat di gruppo)
+   * @param message - Il testo del messaggio
+   * @param recipientsPublicKeys - Array di chiavi pubbliche dei destinatari
+   * @returns Array di messaggi cifrati, uno per ogni destinatario
+   */
+  async encryptMessageForGroup(
+    message: string,
+    recipientsPublicKeys: JsonWebKey[]
+  ): Promise<EncryptedMessage[]> {
+    try {
+      const encryptedMessages: EncryptedMessage[] = [];
+
+      for (const publicKey of recipientsPublicKeys) {
+        const encrypted = await this.encryptMessage(message, publicKey);
+        encryptedMessages.push(encrypted);
+      }
+
+      return encryptedMessages;
+    } catch (error) {
+      console.error("Errore nella cifratura del messaggio di gruppo:", error);
       throw error;
     }
   }

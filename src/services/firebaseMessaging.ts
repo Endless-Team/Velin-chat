@@ -262,11 +262,11 @@ export class FirebaseMessagingService {
     await addDoc(messagesRef, {
       senderId,
       recipientId,
-      // ✅ Versione cifrata per il destinatario
+      // Versione cifrata per il destinatario
       encryptedContent,
       encryptedAesKey,
       iv,
-      // ✅ Versione cifrata per il mittente
+      // Versione cifrata per il mittente
       encryptedContentSender,
       encryptedAesKeySender,
       ivSender,
