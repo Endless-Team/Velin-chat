@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider
+  signInWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { useEncryption } from "../composables/useEncryption";
@@ -19,6 +20,75 @@ const password = ref("");
 const loading = ref(false);
 const errorMsg = ref("");
 const isSignUp = ref(false);
+const isTauri = ref(false);
+
+onMounted(async () => {
+  // ✅ Rileva se siamo in Tauri
+  try {
+    if (typeof window !== "undefined") {
+      const hasTauri =
+      // @ts-ignore
+        window.__TAURI_INTERNALS__ ||
+        // @ts-ignore
+        window.__TAURI__ ||
+        // @ts-ignore
+        window.__TAURI_IPC__ ||
+        navigator.userAgent.includes("Tauri");
+
+      if (hasTauri) {
+        isTauri.value = true;
+        console.log(
+          "🖥️ App in modalità Tauri Desktop - Google login disabilitato"
+        );
+      } else {
+        isTauri.value = false;
+        console.log("🌐 App in modalità Web - Google login disponibile");
+      }
+    }
+  } catch (error) {
+    console.log("⚠️ Errore rilevamento Tauri, assumo modalità Web");
+    isTauri.value = false;
+  }
+
+  console.log("🔍 Verifico se sto tornando da Google...");
+  loading.value = true;
+
+  try {
+    const result = await getRedirectResult(auth);
+
+    if (result) {
+      const userId = result.user.uid;
+      console.log("✅ Tornato da Google! UserId:", userId);
+
+      const isNewUser =
+        result.user.metadata.creationTime ===
+        result.user.metadata.lastSignInTime;
+      const tempPassword = `google_${userId}_temp`;
+
+      if (isNewUser) {
+        await firebaseMessaging.saveUserProfile(
+          userId,
+          result.user.email || "",
+          result.user.displayName || undefined
+        );
+        await initializeNewUserKeys(userId, tempPassword);
+        console.log("✅ Nuovo utente Google configurato");
+      } else {
+        await loadAndUnlockKeys(userId, tempPassword);
+        console.log("✅ Utente Google esistente caricato");
+      }
+
+      await router.push("/dashboard");
+    }
+  } catch (error: any) {
+    console.error("❌ Errore redirect Google:", error);
+    if (error.code && error.code !== "auth/invalid-api-key") {
+      errorMsg.value = "Errore durante l'autenticazione con Google.";
+    }
+  } finally {
+    loading.value = false;
+  }
+});
 
 async function onSubmit() {
   errorMsg.value = "";
@@ -26,73 +96,48 @@ async function onSubmit() {
 
   try {
     if (isSignUp.value) {
-      // REGISTRAZIONE
       const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          email.value,
-          password.value
+        auth,
+        email.value,
+        password.value
       );
 
-      console.log('✅ Utente registrato:', userCredential.user.uid);
+      console.log("✅ Utente registrato:", userCredential.user.uid);
 
-      // Salva profilo utente in Firebase
-      try {
-        await firebaseMessaging.saveUserProfile(
-            userCredential.user.uid,
-            email.value
-        );
-        console.log('✅ Profilo salvato');
-      } catch (profileError) {
-        console.error('Errore nel salvataggio del profilo:', profileError);
-      }
+      await firebaseMessaging.saveUserProfile(
+        userCredential.user.uid,
+        email.value
+      );
 
-      // Genera le chiavi di crittografia per il nuovo utente
-      try {
-        await initializeNewUserKeys(userCredential.user.uid, password.value);
-        console.log('✅ Chiavi crittografiche generate');
-      } catch (keyError) {
-        console.error('Errore nella generazione delle chiavi:', keyError);
-        errorMsg.value = "Errore nella generazione delle chiavi crittografiche.";
-        loading.value = false;
-        return;
-      }
+      await initializeNewUserKeys(userCredential.user.uid, password.value);
+      console.log("✅ Chiavi crittografiche generate");
 
       await router.push("/dashboard");
     } else {
-      // LOGIN
       const userCredential = await signInWithEmailAndPassword(
-          auth,
-          email.value,
-          password.value
+        auth,
+        email.value,
+        password.value
       );
 
-      console.log('✅ Login effettuato:', userCredential.user.uid);
+      console.log("✅ Login effettuato:", userCredential.user.uid);
 
-      // Carica e sblocca le chiavi di crittografia
-      try {
-        const keysUnlocked = await loadAndUnlockKeys(
-            userCredential.user.uid,
-            password.value
-        );
+      const keysUnlocked = await loadAndUnlockKeys(
+        userCredential.user.uid,
+        password.value
+      );
 
-        if (!keysUnlocked) {
-          errorMsg.value = "Errore nello sblocco delle chiavi crittografiche. Verifica la password.";
-          loading.value = false;
-          return;
-        }
-
-        console.log('✅ Chiavi sbloccate');
-      } catch (keyError) {
-        console.error('Errore nel caricamento delle chiavi:', keyError);
-        errorMsg.value = "Errore nel caricamento delle chiavi crittografiche.";
+      if (!keysUnlocked) {
+        errorMsg.value = "Errore nello sblocco delle chiavi crittografiche.";
         loading.value = false;
         return;
       }
 
+      console.log("✅ Chiavi sbloccate");
       await router.push("/dashboard");
     }
   } catch (error: any) {
-    console.error('❌ Errore autenticazione:', error);
+    console.error("❌ Errore autenticazione:", error);
     switch (error.code) {
       case "auth/email-already-in-use":
         errorMsg.value = "Questa email è già registrata.";
@@ -128,238 +173,235 @@ async function signInWithGoogle() {
   loading.value = true;
 
   try {
+    console.log("🔄 Avvio redirect Google...");
+
     const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    const userId = userCredential.user.uid;
-
-    console.log('✅ Login Google:', userId);
-
-    // Verifica se è un nuovo utente
-    const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
-
-    // Password temporanea per Google (in produzione, chiedi una password separata)
-    const tempPassword = `google_${userId}_temp`;
-
-    if (isNewUser) {
-      // Nuovo utente - salva profilo
-      try {
-        await firebaseMessaging.saveUserProfile(
-            userId,
-            userCredential.user.email || '',
-            userCredential.user.displayName || undefined
-        );
-        console.log('✅ Profilo Google salvato');
-      } catch (profileError) {
-        console.error('Errore nel salvataggio profilo:', profileError);
-      }
-
-      // Genera chiavi
-      try {
-        await initializeNewUserKeys(userId, tempPassword);
-        console.log('✅ Chiavi generate per utente Google');
-      } catch (keyError) {
-        console.error('Errore generazione chiavi:', keyError);
-      }
-    } else {
-      // Utente esistente - carica chiavi
-      try {
-        await loadAndUnlockKeys(userId, tempPassword);
-        console.log('✅ Chiavi caricate per utente Google');
-      } catch (keyError) {
-        console.error('Errore caricamento chiavi:', keyError);
-      }
-    }
-
-    await router.push("/dashboard");
+    await signInWithRedirect(auth, provider);
   } catch (error: any) {
-    console.error('❌ Errore Google Sign-In:', error);
-    switch (error.code) {
-      case "auth/popup-closed-by-user":
-        errorMsg.value = "Popup chiuso. Riprova.";
-        break;
-      case "auth/cancelled-popup-request":
-        errorMsg.value = "Richiesta annullata.";
-        break;
-      case "auth/account-exists-with-different-credential":
-        errorMsg.value = "Account già esistente con credenziali diverse.";
-        break;
-      default:
-        errorMsg.value = "Errore durante l'autenticazione con Google.";
-    }
-  } finally {
+    console.error("❌ Errore Google redirect:", error);
+    errorMsg.value = "Errore durante l'autenticazione con Google.";
     loading.value = false;
   }
 }
 </script>
 
 <template>
-  <div class="flex min-h-screen w-screen items-center justify-center bg-slate-950 text-slate-100 p-6">
+  <div
+    class="min-h-screen w-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-4"
+  >
     <div class="w-full max-w-md">
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20">
-        <!-- Header -->
-        <div class="space-y-2 text-center">
-          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-500/20">
-            <svg class="h-8 w-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Card principale -->
+      <div
+        class="bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-3xl shadow-2xl p-8"
+      >
+        <!-- Header con icona -->
+        <div class="text-center mb-8">
+          <div
+            class="mx-auto mb-6 w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20"
+          >
+            <svg
+              class="w-10 h-10 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
           </div>
-          <h1 class="text-3xl font-bold tracking-tight">
-            {{ isSignUp ? "Registrati" : "Bentornato" }}
+          <h1
+            class="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent mb-2"
+          >
+            {{ isSignUp ? "Crea Account" : "Bentornato" }}
           </h1>
-          <p class="text-sm text-slate-400">
-            {{ isSignUp ? "Crea un nuovo account per iniziare." : "Inserisci le credenziali per continuare." }}
+          <p class="text-slate-400 text-sm">
+            {{
+              isSignUp
+                ? "Entra nella community sicura"
+                : "Accedi al tuo account"
+            }}
           </p>
         </div>
 
-        <!-- E2EE Info Badge -->
-        <div class="mt-6 rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-2 text-center">
-          <div class="flex items-center justify-center gap-2 text-sm text-green-400">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-            <span>Protetto con crittografia end-to-end</span>
-          </div>
-        </div>
-
-        <!-- Google Sign In Button -->
+        <!-- Google Sign In (solo web) -->
         <button
-            type="button"
-            @click="signInWithGoogle"
-            :disabled="loading"
-            class="mt-6 w-full rounded-xl border border-white/10 bg-white px-4 py-3 font-semibold text-slate-900 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-3"
+          v-if="!isTauri"
+          type="button"
+          @click="signInWithGoogle"
+          :disabled="loading"
+          class="w-full mb-6 rounded-xl border border-slate-700/50 bg-white px-4 py-3 font-semibold text-slate-900 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-3 shadow-lg"
         >
           <svg class="h-5 w-5" viewBox="0 0 24 24">
-            <path fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            <path
+              fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            />
           </svg>
           <span>Continua con Google</span>
         </button>
 
+        <!-- Messaggio Desktop -->
+        <div
+          v-else
+          class="mb-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl"
+        >
+          <p class="text-sm text-yellow-400 text-center">
+            🖥️ Login Google non disponibile su desktop
+          </p>
+        </div>
+
         <!-- Divider -->
-        <div class="relative my-6 flex items-center gap-4">
-          <div class="flex-1 border-t border-white/10"></div>
-          <span class="text-sm text-slate-400">oppure</span>
-          <div class="flex-1 border-t border-white/10"></div>
+        <div v-if="!isTauri" class="relative mb-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-700/50"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-4 bg-slate-900/50 text-slate-400">oppure</span>
+          </div>
         </div>
 
         <!-- Form -->
-        <form class="space-y-5" @submit.prevent="onSubmit">
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-200">Email</label>
+        <form @submit.prevent="onSubmit" class="space-y-5">
+          <!-- Email -->
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Email</label
+            >
             <input
-                v-model="email"
-                type="email"
-                autocomplete="email"
-                placeholder="nome@dominio.it"
-                required
-                class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/20"
+              v-model="email"
+              type="email"
+              autocomplete="email"
+              placeholder="nome@esempio.it"
+              required
+              class="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
           </div>
 
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-200">Password</label>
+          <!-- Password -->
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Password</label
+            >
             <input
-                v-model="password"
-                type="password"
-                :autocomplete="isSignUp ? 'new-password' : 'current-password'"
-                placeholder="••••••••"
-                required
-                class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/20"
+              v-model="password"
+              type="password"
+              :autocomplete="isSignUp ? 'new-password' : 'current-password'"
+              placeholder="••••••••"
+              required
+              class="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
-            <p v-if="isSignUp" class="text-xs text-slate-400">
-              Minimo 6 caratteri. Questa password proteggerà anche i tuoi messaggi.
+            <p v-if="isSignUp" class="mt-2 text-xs text-slate-500">
+              Minimo 6 caratteri
             </p>
           </div>
 
           <!-- Error Message -->
           <div
-              v-if="errorMsg"
-              class="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+            v-if="errorMsg"
+            class="p-3 bg-red-500/10 border border-red-500/20 rounded-xl"
           >
-            <div class="flex items-center gap-2">
-              <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span>{{ errorMsg }}</span>
-            </div>
+            <p class="text-sm text-red-400">{{ errorMsg }}</p>
           </div>
 
           <!-- Submit Button -->
           <button
-              type="submit"
-              :disabled="loading"
-              class="w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            type="submit"
+            :disabled="loading"
+            class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span v-if="loading" class="flex items-center justify-center gap-2">
-              <svg class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
                 <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              {{ isSignUp ? "Registrazione..." : "Accesso..." }}
+              Caricamento...
             </span>
             <span v-else>
               {{ isSignUp ? "Registrati" : "Accedi" }}
             </span>
           </button>
 
-          <!-- Divider -->
-          <div class="relative my-6 flex items-center gap-4">
-            <div class="flex-1 border-t border-white/10"></div>
-            <span class="text-sm text-slate-400">oppure</span>
-            <div class="flex-1 border-t border-white/10"></div>
-          </div>
-
           <!-- Toggle Sign Up / Login -->
           <button
-              type="button"
-              class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-semibold text-slate-100 transition-colors hover:bg-white/10"
-              @click="isSignUp = !isSignUp; errorMsg = ''"
+            type="button"
+            @click="
+              isSignUp = !isSignUp;
+              errorMsg = '';
+            "
+            class="w-full py-3 bg-slate-800/30 hover:bg-slate-800/50 text-slate-300 font-medium rounded-xl border border-slate-700/30 transition-all"
           >
-            {{ isSignUp ? "Hai già un account? Accedi" : "Non hai un account? Registrati" }}
+            {{
+              isSignUp
+                ? "Hai già un account? Accedi"
+                : "Non hai un account? Registrati"
+            }}
           </button>
 
-          <!-- Back to Home -->
+          <!-- Back to Home (solo web) -->
           <button
-              type="button"
-              class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10"
-              @click="router.push('/')"
+            v-if="!isTauri"
+            type="button"
+            @click="router.push('/')"
+            class="w-full py-2 text-sm text-slate-400 hover:text-slate-300 transition-colors"
           >
             ← Torna alla Home
           </button>
         </form>
       </div>
 
-      <!-- Footer Text -->
-      <p class="mt-6 text-center text-xs text-slate-500">
-        Effettuando l'accesso accetti i nostri termini di servizio e la privacy policy.
-        <br>
-        I tuoi messaggi sono protetti con crittografia end-to-end.
-      </p>
+      <!-- Footer con badge E2EE -->
+      <div class="mt-6 text-center">
+        <div
+          class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full"
+        >
+          <svg
+            class="w-4 h-4 text-green-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+          <span class="text-sm text-green-400 font-medium"
+            >Protetto con crittografia E2EE</span
+          >
+        </div>
+        <p class="mt-3 text-xs text-slate-500">
+          I tuoi messaggi sono completamente privati e sicuri
+        </p>
+      </div>
     </div>
   </div>
 </template>
