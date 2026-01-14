@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 // ✅ Rileva se siamo in Tauri
 const isTauri = () => {
@@ -59,9 +60,24 @@ export const router = createRouter({
   ],
 });
 
-// ✅ Navigation Guard
-router.beforeEach((to, _from, next) => {
-  const user = auth.currentUser;
+// ✅ Funzione helper per aspettare che Firebase Auth si inizializzi
+function getCurrentUser(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        unsubscribe();
+        resolve(user);
+      },
+      reject
+    );
+  });
+}
+
+// ✅ Navigation Guard con controllo async
+router.beforeEach(async (to, _from, next) => {
+  // ✅ Aspetta che Firebase Auth sia pronto
+  const user = await getCurrentUser();
 
   // Se la rotta richiede autenticazione e l'utente non è loggato
   if (to.meta.requiresAuth && !user) {
@@ -69,7 +85,12 @@ router.beforeEach((to, _from, next) => {
   }
   // Se la rotta è per guest (home/login) e l'utente è già loggato
   else if (to.meta.requiresGuest && user) {
-    next("/dashboard");
+    // ✅ Evita loop infinito: non redirigere se stai già andando al login
+    if (to.path === "/login") {
+      next("/dashboard");
+    } else {
+      next("/dashboard");
+    }
   }
   // Altrimenti procedi normalmente
   else {

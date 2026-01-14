@@ -22,6 +22,14 @@ async function handleUnlock() {
   }
 
   const currentUser = auth.currentUser;
+
+  // ✅ Debug: verifica autenticazione
+  console.log("🔐 Auth state:", {
+    isAuthenticated: !!currentUser,
+    uid: currentUser?.uid,
+    email: currentUser?.email,
+  });
+
   if (!currentUser) {
     error.value = "Utente non autenticato";
     return;
@@ -32,10 +40,13 @@ async function handleUnlock() {
 
   try {
     console.log("🔓 Tentativo di sblocco chiavi...");
+    console.log("📍 Percorso Firestore:", `userKeys/${currentUser.uid}`);
 
     // 1. Recupera le chiavi cifrate da Firebase
     const userKeysRef = doc(db, "userKeys", currentUser.uid);
     const userKeysSnap = await getDoc(userKeysRef);
+
+    console.log("📦 Documento trovato:", userKeysSnap.exists());
 
     if (!userKeysSnap.exists()) {
       error.value = "Chiavi non trovate. Genera nuove chiavi.";
@@ -44,6 +55,11 @@ async function handleUnlock() {
     }
 
     const userKeys = userKeysSnap.data();
+    console.log("🔑 Chiavi caricate:", {
+      hasEncryptedPrivateKey: !!userKeys.encryptedPrivateKey,
+      hasPublicKey: !!userKeys.publicKey,
+      hasSalt: !!userKeys.salt,
+    });
 
     // 2. Prova a sbloccare con la password
     const success = await keyStore.unlockKeys(userKeys as any, password.value);
@@ -57,7 +73,22 @@ async function handleUnlock() {
     }
   } catch (e: any) {
     console.error("❌ Errore nello sblocco:", e);
-    error.value = e.message || "Errore nello sblocco delle chiavi";
+    console.error("🔍 Dettagli errore:", {
+      code: e.code,
+      message: e.message,
+      stack: e.stack,
+    });
+
+    // ✅ Messaggi di errore più specifici
+    if (e.code === "permission-denied") {
+      error.value =
+        "Errore di permessi Firestore. Verifica le regole di sicurezza.";
+    } else if (e.message?.includes("Missing or insufficient permissions")) {
+      error.value =
+        "Permessi insufficienti. Le regole potrebbero non essere state applicate.";
+    } else {
+      error.value = e.message || "Errore nello sblocco delle chiavi";
+    }
   } finally {
     isUnlocking.value = false;
   }
