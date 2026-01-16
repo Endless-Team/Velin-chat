@@ -17,9 +17,9 @@ export interface Chat {
     encryptedAesKeySender: string;
     ivSender: string;
   };
-  online?: boolean; // ✅ AGGIUNTO
-  email?: string; // ✅ AGGIUNTO se serve
-  createdAt?: any; // ✅ AGGIUNTO se serve
+  online?: boolean;
+  email?: string;
+  createdAt?: any;
 }
 
 export interface Message {
@@ -29,7 +29,7 @@ export interface Message {
   text: string;
   sent: boolean;
   timestamp: string;
-  status: 'sent' | 'delivered' | 'read';
+  status: "sent" | "delivered" | "read";
 }
 
 export interface UserKeys {

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useAuth } from "../composables/useAuth";
 import { useRouter, useRoute } from "vue-router";
 import { useEncryptedChat } from "../composables/useEncryptedChat";
 import { keyStore } from "../stores/keyStore";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 import ChatListItem from "../components/ChatListItem.vue";
 import ProfileEditModal from "../components/ProfileEditModal.vue";
 import UnlockKeysModal from "../components/UnlockKeysModal.vue";
@@ -23,10 +25,19 @@ const showNewChatModal = ref(false);
 const isCreatingChat = ref(false);
 const isKeysUnlocked = computed(() => keyStore.getIsUnlocked());
 
-// ✅ AGGIUNTO: Computed per sapere se c'è una chat aperta
+// ✅ AGGIUNTO: Real-time display name dal database
+const realtimeDisplayName = ref("");
+
+// ✅ AGGIUNTO: Listener per annullare l'iscrizione
+let unsubscribeUserProfile: (() => void) | null = null;
+
 const isChatOpen = computed(() => route.name === "chat" && route.params.chatId);
 
+// ✅ MODIFICATO: Usa il nome real-time se disponibile, altrimenti fallback
 const displayName = computed(() => {
+  if (realtimeDisplayName.value) {
+    return realtimeDisplayName.value;
+  }
   return user.value?.displayName || user.value?.email?.split("@")[0] || "User";
 });
 
@@ -42,6 +53,33 @@ onMounted(async () => {
 
   if (!isKeysUnlocked.value) {
     showUnlockModal.value = true;
+  }
+
+  // ✅ AGGIUNTO: Listener real-time per il profilo utente
+  if (user.value?.uid) {
+    const userDocRef = doc(db, "users", user.value.uid);
+
+    unsubscribeUserProfile = onSnapshot(
+      userDocRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          realtimeDisplayName.value = data.displayName || "";
+          console.log("📡 Nome aggiornato in real-time:", data.displayName);
+        }
+      },
+      (error) => {
+        console.error("❌ Errore listener profilo:", error);
+      }
+    );
+  }
+});
+
+// ✅ AGGIUNTO: Pulisci il listener quando il componente viene smontato
+onUnmounted(() => {
+  if (unsubscribeUserProfile) {
+    unsubscribeUserProfile();
+    console.log("🔌 Listener profilo disconnesso");
   }
 });
 
@@ -292,12 +330,12 @@ async function handleKeysUnlocked() {
       </div>
     </aside>
 
-    <!-- ✅ Area Principale: Empty State O Chat Component -->
+    <!-- Area Principale: Empty State O Chat Component -->
     <main class="flex flex-1 flex-col min-w-0">
-      <!-- ✅ Mostra RouterView (Chat.vue) se c'è una chat aperta -->
+      <!-- Mostra RouterView (Chat.vue) se c'è una chat aperta -->
       <RouterView v-if="isChatOpen" />
 
-      <!-- ✅ Altrimenti mostra Empty State -->
+      <!-- Altrimenti mostra Empty State -->
       <div
         v-else
         class="flex h-full flex-col items-center justify-center space-y-4 text-center px-4"
