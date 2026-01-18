@@ -3,7 +3,7 @@
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100">
     <header class="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
-      <div class="text-lg font-semibold tracking-tight">Mutina</div>
+      <div class="text-lg font-semibold tracking-tight">Velin</div>
 
       <nav class="flex items-center gap-3">
         <RouterLink

@@ -23,7 +23,6 @@ const isSignUp = ref(false);
 const isTauri = ref(false);
 
 onMounted(async () => {
-  // ✅ Rileva se siamo in Tauri
   try {
     if (typeof window !== "undefined") {
       const hasTauri =
