@@ -1,0 +1,44 @@
+export interface Chat {
+  id: string;
+  name: string;
+  avatar?: string;
+  lastMessage: string;
+  timestamp: string;
+  unread: number;
+  isGroup: boolean;
+  participants?: string[];
+  publicKeys?: Record<string, string>;
+  lastMessageData?: {
+    senderId: string;
+    encryptedContent: string;
+    encryptedAesKey: string;
+    iv: string;
+    encryptedContentSender: string;
+    encryptedAesKeySender: string;
+    ivSender: string;
+  };
+  online?: boolean;
+  email?: string;
+  createdAt?: any;
+}
+
+export interface Message {
+  id: string;
+  chatId: string;
+  senderId: string;
+  text: string;
+  sent: boolean;
+  timestamp: string;
+  status: 'sending' | 'sent' | 'delivered' | 'read'; // ✅ Aggiornato
+  encryptedContent?: string;
+  encryptedAesKey?: string;
+  iv?: string;
+}
+
+export interface UserKeys {
+  userId: string;
+  publicKey: string;
+  encryptedPrivateKey: string;
+  iv: string;
+  salt: string;
+}
