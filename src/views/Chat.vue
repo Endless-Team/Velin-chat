@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-// import { useAuth } from "../composables/useAuth";
+import { ref, computed, onMounted, nextTick, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useEncryptedChat } from "../composables/useEncryptedChat";
 import { keyStore } from "../stores/keyStore";
@@ -8,7 +7,6 @@ import MessageBubble from "../components/MessageBubble.vue";
 import UnlockKeysModal from "../components/UnlockKeysModal.vue";
 
 const route = useRoute();
-// const { user } = useAuth();
 
 const {
   chats,
@@ -30,6 +28,27 @@ const sendError = ref("");
 const isSending = ref(false);
 const isLoading = ref(true);
 const isKeysUnlocked = computed(() => keyStore.getIsUnlocked());
+
+// ✅ Ref per il container dei messaggi
+const messagesContainer = ref<HTMLElement | null>(null);
+
+// ✅ Funzione per scrollare in fondo
+function scrollToBottom() {
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+    }
+  });
+}
+
+// ✅ Watch sui messaggi per auto-scroll quando arrivano nuovi messaggi
+watch(
+  currentMessages,
+  () => {
+    scrollToBottom();
+  },
+  { deep: true },
+);
 
 onMounted(async () => {
   console.log("🚀 Chat Component mounted");
@@ -55,6 +74,9 @@ onMounted(async () => {
     await selectChat(chatId);
 
     console.log("✅ Chat selezionata:", selectedChat.value);
+
+    // ✅ Scrolla in fondo dopo il caricamento iniziale
+    scrollToBottom();
   } catch (error) {
     console.error("❌ Errore nel caricamento della chat:", error);
     sendError.value = "Impossibile caricare la chat";
@@ -92,6 +114,9 @@ async function sendMessage() {
     console.log("🚀 Invio messaggio crittografato...");
     await sendEncryptedMessage(selectedChat.value.id, messageText);
     console.log("✅ Messaggio inviato con successo!");
+
+    // ✅ Scrolla in fondo dopo l'invio
+    scrollToBottom();
   } catch (error: any) {
     console.error("❌ Errore nell'invio:", error);
 
@@ -118,7 +143,6 @@ function handleKeysUnlocked() {
 </script>
 
 <template>
-  <!-- ✅ RIMOSSO il wrapper div esterno -->
   <!-- Loading state -->
   <div v-if="isLoading" class="flex flex-1 items-center justify-center">
     <div class="text-center space-y-3">
@@ -146,14 +170,14 @@ function handleKeysUnlocked() {
   </div>
 
   <!-- Chat content -->
-  <div v-else class="flex flex-1 flex-col min-w-0">
+  <!-- ✅ AGGIUNTO: h-full per garantire che occupi tutta l'altezza disponibile -->
+  <div v-else class="flex flex-col h-full min-w-0">
     <!-- Header Chat -->
+    <!-- ✅ AGGIUNTO: shrink-0 per impedire che l'header si restringa -->
     <header
-      class="flex items-center justify-between border-b border-white/10 p-3"
+      class="shrink-0 flex items-center justify-between border-b border-white/10 p-3"
     >
       <span class="flex items-center gap-3 min-w-0">
-        <!-- ✅ RIMOSSO il bottone "Torna indietro" -->
-
         <span
           class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
           :class="selectedChat?.isGroup ? 'bg-purple-600' : 'bg-indigo-600'"
@@ -234,7 +258,12 @@ function handleKeysUnlocked() {
     </header>
 
     <!-- Area Messaggi -->
-    <div class="flex-1 space-y-4 overflow-y-auto p-6">
+    <!-- ✅ AGGIUNTO: ref="messagesContainer" per lo scroll automatico -->
+    <!-- ✅ MODIFICATO: min-h-0 per evitare overflow, flex-1 per espandersi -->
+    <div
+      ref="messagesContainer"
+      class="flex-1 min-h-0 space-y-4 overflow-y-auto p-6"
+    >
       <MessageBubble
         v-for="msg in currentMessages"
         :key="msg.id"
@@ -243,7 +272,8 @@ function handleKeysUnlocked() {
     </div>
 
     <!-- Input Messaggio -->
-    <footer class="border-t border-white/10 p-4">
+    <!-- ✅ AGGIUNTO: shrink-0 per impedire che il footer si restringa -->
+    <footer class="shrink-0 border-t border-white/10 p-4">
       <!-- Error Toast -->
       <div
         v-if="sendError"
