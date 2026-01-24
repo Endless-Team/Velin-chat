@@ -29,7 +29,10 @@ export interface Message {
   text: string;
   sent: boolean;
   timestamp: string;
-  status: "sent" | "delivered" | "read";
+  status: 'sending' | 'sent' | 'delivered' | 'read'; // ✅ Aggiornato
+  encryptedContent?: string;
+  encryptedAesKey?: string;
+  iv?: string;
 }
 
 export interface UserKeys {

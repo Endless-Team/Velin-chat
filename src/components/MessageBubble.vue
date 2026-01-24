@@ -19,6 +19,7 @@ defineProps<Props>();
       "
     >
       <p class="text-sm whitespace-pre-wrap break-words">{{ message.text }}</p>
+
       <div class="flex items-center justify-end gap-1.5 mt-1">
         <span
           class="text-xs"
@@ -29,9 +30,26 @@ defineProps<Props>();
 
         <!-- Status indicators stile WhatsApp -->
         <span v-if="message.sent" class="flex items-center">
+          <!-- Sending (clock) -->
+          <svg
+            v-if="message.status === 'sending'"
+            class="h-4 w-4 text-indigo-200 animate-pulse"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 7v5l3 2"
+            />
+          </svg>
+
           <!-- Sent (singolo check) -->
           <svg
-            v-if="message.status === 'sent'"
+            v-else-if="!message.status || message.status === 'sent'"
             class="h-4 w-4 text-indigo-200"
             fill="none"
             stroke="currentColor"
@@ -54,7 +72,7 @@ defineProps<Props>();
             <polyline points="23 6 12 17" />
           </svg>
 
-          <!-- Read (doppio check blu) -->
+          <!-- Read (doppio check verde) -->
           <svg
             v-else-if="message.status === 'read'"
             class="h-4 w-4 text-green-400"
@@ -65,6 +83,18 @@ defineProps<Props>();
           >
             <polyline points="17 6 6 17 1 12" />
             <polyline points="23 6 12 17" />
+          </svg>
+
+          <!-- Fallback: se arriva uno status sconosciuto -->
+          <svg
+            v-else
+            class="h-4 w-4 text-indigo-200"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+          >
+            <polyline points="20 6 9 17 4 12" />
           </svg>
         </span>
       </div>

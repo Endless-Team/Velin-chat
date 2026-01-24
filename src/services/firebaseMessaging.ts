@@ -35,7 +35,7 @@ export class FirebaseMessagingService {
           salt: userKeys.salt,
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
 
       // ✅ AGGIUNTO: Salva anche in userKeys collection
@@ -89,7 +89,7 @@ export class FirebaseMessagingService {
   async saveUserProfile(
     userId: string,
     email: string,
-    displayName?: string
+    displayName?: string,
   ): Promise<void> {
     try {
       const userRef = doc(db, "users", userId);
@@ -100,7 +100,7 @@ export class FirebaseMessagingService {
           displayName: displayName || email.split("@")[0],
           createdAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
     } catch (error) {
       console.error("Errore nel salvataggio del profilo:", error);
@@ -136,7 +136,7 @@ export class FirebaseMessagingService {
    */
   async getOrCreateDirectChat(
     userId1: string,
-    userId2: string
+    userId2: string,
   ): Promise<string> {
     try {
       console.log("🔍 Cerco chat tra:", userId1, "e", userId2);
@@ -146,7 +146,7 @@ export class FirebaseMessagingService {
       const q = query(
         chatsRef,
         where("participants", "array-contains", userId1),
-        where("isGroup", "==", false)
+        where("isGroup", "==", false),
       );
 
       const snapshot = await getDocs(q);
@@ -180,7 +180,7 @@ export class FirebaseMessagingService {
             console.log("User1 publicKey:", !!user1Doc?.publicKey);
             console.log("User2 publicKey:", !!user2Doc?.publicKey);
             throw new Error(
-              "Le chiavi pubbliche degli utenti non sono disponibili. Assicurati che entrambi abbiano generato le chiavi."
+              "Le chiavi pubbliche degli utenti non sono disponibili. Assicurati che entrambi abbiano generato le chiavi.",
             );
           }
 
@@ -217,7 +217,7 @@ export class FirebaseMessagingService {
         console.log("User1 publicKey:", !!publicKey1);
         console.log("User2 publicKey:", !!publicKey2);
         throw new Error(
-          "Le chiavi pubbliche degli utenti non sono disponibili. Assicurati che entrambi abbiano generato le chiavi."
+          "Le chiavi pubbliche degli utenti non sono disponibili. Assicurati che entrambi abbiano generato le chiavi.",
         );
       }
 
@@ -254,7 +254,7 @@ export class FirebaseMessagingService {
       const chatsRef = collection(db, "chats");
       const q = query(
         chatsRef,
-        where("participants", "array-contains", userId)
+        where("participants", "array-contains", userId),
       );
 
       const snapshot = await getDocs(q);
@@ -265,7 +265,7 @@ export class FirebaseMessagingService {
 
         // Trova l'altro partecipante (per chat dirette)
         const otherUserId = data.participants?.find(
-          (id: string) => id !== userId
+          (id: string) => id !== userId,
         );
         let chatName = "Chat";
         let chatAvatar = "";
@@ -313,41 +313,38 @@ export class FirebaseMessagingService {
     chatId: string,
     senderId: string,
     recipientId: string,
+    // Dati cifrati per il destinatario
     encryptedContent: string,
     encryptedAesKey: string,
     iv: string,
+    // ✅ AGGIUNTO: Dati cifrati per il mittente
     encryptedContentSender: string,
     encryptedAesKeySender: string,
-    ivSender: string
+    ivSender: string,
   ): Promise<void> {
-    const messagesRef = collection(db, "chats", chatId, "messages");
+    const messageRef = collection(db, `chats/${chatId}/messages`);
 
-    await addDoc(messagesRef, {
+    await addDoc(messageRef, {
       senderId,
       recipientId,
+      // Per il destinatario
       encryptedContent,
       encryptedAesKey,
       iv,
+      // ✅ Per il mittente
       encryptedContentSender,
       encryptedAesKeySender,
       ivSender,
       timestamp: serverTimestamp(),
       status: "sent",
+      readBy: [],
     });
 
-    const chatRef = doc(db, "chats", chatId);
+    // Aggiorna lastMessage nella chat
+    const chatRef = doc(db, `chats/${chatId}`);
     await updateDoc(chatRef, {
-      lastMessage: "🔒 Messaggio cifrato",
-      timestamp: serverTimestamp(),
-      lastMessageData: {
-        senderId,
-        encryptedContent,
-        encryptedAesKey,
-        iv,
-        encryptedContentSender,
-        encryptedAesKeySender,
-        ivSender,
-      },
+      lastMessage: encryptedContent.substring(0, 50),
+      lastMessageTime: serverTimestamp(),
     });
   }
 
@@ -356,7 +353,7 @@ export class FirebaseMessagingService {
    */
   subscribeToMessages(
     chatId: string,
-    callback: (messages: any[]) => void
+    callback: (messages: any[]) => void,
   ): () => void {
     const messagesRef = collection(db, "chats", chatId, "messages");
     const q = query(messagesRef, orderBy("timestamp", "asc"));

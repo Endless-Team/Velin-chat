@@ -21,7 +21,7 @@ const {
 
 const chatName = computed(() => selectedChat.value?.name || "Chat");
 const chatAvatar = computed(
-  () => selectedChat.value?.avatar || chatName.value.charAt(0).toUpperCase()
+  () => selectedChat.value?.avatar || chatName.value.charAt(0).toUpperCase(),
 );
 
 const message = ref("");
