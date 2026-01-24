@@ -15,10 +15,14 @@
     -ms-overflow-style: none;
 }
 
-/* Assicura che lo scroll funzioni comunque */
+/* Forza scroll su html e body */
 html,
-body {
+body,
+#app {
+    height: 100%;
+    width: 100%;
     overflow: auto;
+    position: relative;
 }
 
 /* Disabilita il gesto swipe indietro/avanti con trackpad */

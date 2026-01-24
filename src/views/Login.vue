@@ -26,7 +26,7 @@ onMounted(async () => {
   try {
     if (typeof window !== "undefined") {
       const hasTauri =
-      // @ts-ignore
+        // @ts-ignore
         window.__TAURI_INTERNALS__ ||
         // @ts-ignore
         window.__TAURI__ ||
@@ -37,7 +37,7 @@ onMounted(async () => {
       if (hasTauri) {
         isTauri.value = true;
         console.log(
-          "🖥️ App in modalità Tauri Desktop - Google login disabilitato"
+          "🖥️ App in modalità Tauri Desktop - Google login disabilitato",
         );
       } else {
         isTauri.value = false;
@@ -68,7 +68,7 @@ onMounted(async () => {
         await firebaseMessaging.saveUserProfile(
           userId,
           result.user.email || "",
-          result.user.displayName || undefined
+          result.user.displayName || undefined,
         );
         await initializeNewUserKeys(userId, tempPassword);
         console.log("✅ Nuovo utente Google configurato");
@@ -98,14 +98,14 @@ async function onSubmit() {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email.value,
-        password.value
+        password.value,
       );
 
       console.log("✅ Utente registrato:", userCredential.user.uid);
 
       await firebaseMessaging.saveUserProfile(
         userCredential.user.uid,
-        email.value
+        email.value,
       );
 
       await initializeNewUserKeys(userCredential.user.uid, password.value);
@@ -116,14 +116,14 @@ async function onSubmit() {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email.value,
-        password.value
+        password.value,
       );
 
       console.log("✅ Login effettuato:", userCredential.user.uid);
 
       const keysUnlocked = await loadAndUnlockKeys(
         userCredential.user.uid,
-        password.value
+        password.value,
       );
 
       if (!keysUnlocked) {
@@ -186,9 +186,9 @@ async function signInWithGoogle() {
 
 <template>
   <div
-    class="min-h-screen w-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-4"
+    class="min-h-screen w-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-4 overflow-y-auto"
   >
-    <div class="w-full max-w-md">
+    <div class="w-full max-w-md my-auto">
       <!-- Card principale -->
       <div
         class="bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-3xl shadow-2xl p-8"

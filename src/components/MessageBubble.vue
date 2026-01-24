@@ -27,7 +27,7 @@ defineProps<Props>();
           {{ message.timestamp }}
         </span>
 
-        <!-- ✅ Status indicators stile WhatsApp -->
+        <!-- Status indicators stile WhatsApp -->
         <span v-if="message.sent" class="flex items-center">
           <!-- Sent (singolo check) -->
           <svg
@@ -50,20 +50,20 @@ defineProps<Props>();
             viewBox="0 0 24 24"
             stroke-width="2.5"
           >
-            <polyline points="20 6 9 17 4 12" />
+            <polyline points="17 6 6 17 1 12" />
             <polyline points="23 6 12 17" />
           </svg>
 
           <!-- Read (doppio check blu) -->
           <svg
             v-else-if="message.status === 'read'"
-            class="h-4 w-4 text-blue-300"
+            class="h-4 w-4 text-green-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
             stroke-width="2.5"
           >
-            <polyline points="20 6 9 17 4 12" />
+            <polyline points="17 6 6 17 1 12" />
             <polyline points="23 6 12 17" />
           </svg>
         </span>
@@ -71,7 +71,7 @@ defineProps<Props>();
 
       <!-- Indicatore crittografia (visibile on hover) -->
       <div
-        class="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        class="absolute -top-1 -right-1 opacity-0 group-hover:opacity-90 transition-opacity"
         title="Messaggio cifrato end-to-end"
       >
         <div class="bg-slate-900 rounded-full p-0.5">
