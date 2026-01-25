@@ -43,7 +43,7 @@ Apri una issue di tipo "Feature Request" descrivendo:
 
 Usa commit messages descrittivi:
 
-````
+```text
 
 feat: aggiungi supporto per videochiamate
 fix: risolvi bug sincronizzazione messaggi
