@@ -59,4 +59,3 @@ test: aggiungi test per autenticazione
 Sii rispettoso, inclusivo e costruttivo. Tolleranza zero per comportamenti offensivi.
 
 Grazie per il tuo contributo! ❤️
-````
