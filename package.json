@@ -8,7 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "release": "tauri build"
+    "release": "tauri build",
+    "deploy": "vite build && firebase deploy"
   },
   "dependencies": {
     "@iconify/vue": "^5.0.0",
