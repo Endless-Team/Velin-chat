@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { Icon } from "@iconify/vue";
 import AppLayout from "../components/AppLayout.vue";
 
 // ========================================
 // CONFIGURAZIONE GITHUB
 // ========================================
-const GITHUB_USER = "tuousername"; // ⚠️ CAMBIA CON IL TUO USERNAME
-const GITHUB_REPO = "velin"; // ⚠️ CAMBIA CON IL NOME DEL TUO REPO
+const GITHUB_USER = "Endless-Team"; // ⚠️ CAMBIA CON IL TUO USERNAME
+const GITHUB_REPO = "Velin-chat"; // ⚠️ CAMBIA CON IL NOME DEL TUO REPO
 const VERSION = "1.0.0"; // Mantieni sincronizzato con tauri.conf.json
 
 // ========================================
@@ -20,7 +21,7 @@ const detectedOS = ref<string>("");
 const platforms = [
   {
     name: "Windows",
-    icon: "💻",
+    icon: "mdi:microsoft-windows",
     description: "Windows 10 o superiore",
     downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/Velin_${VERSION}_x64-setup.exe`,
     os: "windows",
@@ -28,7 +29,7 @@ const platforms = [
   },
   {
     name: "macOS",
-    icon: "🍎",
+    icon: "mdi:apple",
     description: "macOS 10.13 o superiore",
     downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/Velin_${VERSION}_x64.dmg`,
     os: "macos",
@@ -36,7 +37,7 @@ const platforms = [
   },
   {
     name: "Linux",
-    icon: "🐧",
+    icon: "mdi:linux",
     description: "Ubuntu, Fedora, Debian",
     downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/velin_${VERSION}_amd64.AppImage`,
     os: "linux",
@@ -44,7 +45,7 @@ const platforms = [
   },
   {
     name: "iOS",
-    icon: "📱",
+    icon: "mdi:cellphone",
     description: "iOS 14 o superiore",
     downloadUrl: "https://apps.apple.com/app/velin/id123456789", // ⚠️ Sostituisci con il tuo App Store URL
     os: "ios",
@@ -53,7 +54,7 @@ const platforms = [
   },
   {
     name: "Android",
-    icon: "🤖",
+    icon: "mdi:android",
     description: "Android 8.0 o superiore",
     downloadUrl: "https://play.google.com/store/apps/details?id=com.velin.app", // ⚠️ Sostituisci con il tuo Play Store URL
     os: "android",
@@ -62,7 +63,7 @@ const platforms = [
   },
   {
     name: "Web",
-    icon: "🌐",
+    icon: "mdi:web",
     description: "Usa nel browser",
     downloadUrl: "/login",
     os: "web",
@@ -201,7 +202,9 @@ onMounted(() => {
                 @click="handleDownload(getPrimaryPlatform())"
                 class="inline-flex items-center gap-3 rounded-full bg-indigo-600 px-10 py-4 text-lg font-bold text-white shadow-2xl shadow-indigo-600/50 transition-all hover:scale-105 hover:bg-indigo-500"
               >
-                <span class="text-2xl">{{ getPrimaryPlatform().icon }}</span>
+                <span class="text-2xl"
+                  ><Icon :icon="getPrimaryPlatform().icon" class="h-8 w-8"
+                /></span>
                 {{
                   getPrimaryPlatform().isWebApp
                     ? "Apri Velin Web"
@@ -242,7 +245,9 @@ onMounted(() => {
                 <!-- Platform Content -->
                 <div class="relative space-y-4">
                   <!-- Icon -->
-                  <div class="text-6xl">{{ platform.icon }}</div>
+                  <div class="text-6xl">
+                    <Icon :icon="platform.icon" class="h-16 w-16" />
+                  </div>
 
                   <!-- Name -->
                   <h3 class="text-2xl font-bold">{{ platform.name }}</h3>

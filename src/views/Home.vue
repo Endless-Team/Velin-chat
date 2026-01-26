@@ -65,12 +65,13 @@ onMounted(async () => {
             <!-- CTA Buttons - Discord Style (Larger) -->
             <div class="mt-10 flex flex-wrap items-center justify-center gap-6">
               <button
-                @click="router.push('/login')"
+                @click="router.push('/download')"
                 class="group relative overflow-hidden rounded-full bg-white px-10 py-5 text-lg font-bold text-slate-900 shadow-2xl transition-all hover:scale-105 hover:shadow-indigo-500/50"
               >
                 <span class="relative z-10">Inizia ora gratis</span>
               </button>
               <button
+                @click="router.push('/login')"
                 class="rounded-full border-2 border-white/20 bg-slate-800/50 px-10 py-5 text-lg font-bold text-white backdrop-blur-sm transition-all hover:scale-105 hover:border-white/40 hover:bg-slate-700/50"
               >
                 Apri Velin nel browser
