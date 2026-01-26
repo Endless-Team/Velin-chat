@@ -15,7 +15,7 @@
   -ms-overflow-style: none;
 }
 
-/* ✅ RIMUOVI height e overflow da #app - lascia scroll naturale */
+/* scroll naturale */
 html,
 body {
   margin: 0;
