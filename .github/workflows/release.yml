@@ -3,7 +3,7 @@ name: Release Build
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -71,42 +71,46 @@ jobs:
           echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
           echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> .env
 
+      # Genera la data formattata
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%d/%m/%Y')" >> $GITHUB_OUTPUT
+
       - name: Build app
         uses: tauri-apps/tauri-action@v0
-        env: 
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: '🚀 Velin v__VERSION__'
+          releaseName: "🚀 Velin v__VERSION__"
           releaseBody: |
             ## 📦 Download
-            
+
             Scegli il file appropriato per il tuo sistema operativo:
-            
+
             ### Windows
             - **`Velin_x.x.x_x64-setup.exe`** - Installer NSIS (consigliato)
             - **`Velin_x.x.x_x64_en-US.msi`** - Installer MSI
-            
+
             ### macOS
             - **`Velin_x.x.x_aarch64.dmg`** - Per Mac con chip Apple Silicon (M1/M2/M3)
             - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
-            
+
             ### Linux
             - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
             - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
-            
+
             ---
-            
+
             ## 🐛 Segnala Bug
-            
+
             Hai trovato un problema? [Apri un issue](https://github.com/Endless-Team/Velin-chat/issues/new)
-            
+
             ---
-            
+
             **Versione:** v__VERSION__  
-            **Data rilascio:** $(date +'%d/%m/%Y')  
+            **Data rilascio:** ${{ steps.date.outputs.date }}  
             **Build ID:** ${{ github.sha }}
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.platform.target }} --bundles ${{ matrix.platform.bundles }}
-
