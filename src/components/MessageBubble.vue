@@ -9,16 +9,21 @@ defineProps<Props>();
 </script>
 
 <template>
-  <div class="flex" :class="message.sent ? 'justify-end' : 'justify-start'">
+  <div
+    class="flex animate-fadeIn"
+    :class="message.sent ? 'justify-end' : 'justify-start'"
+  >
     <div
-      class="max-w-md rounded-2xl px-4 py-2 relative group"
+      class="max-w-md rounded-xl px-3 py-2 relative group shadow-md transition-all hover:shadow-lg"
       :class="
         message.sent
-          ? 'bg-indigo-600 text-white'
-          : 'border border-white/10 bg-white/5 text-slate-100'
+          ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-br-sm'
+          : 'border border-white/10 bg-slate-800/80 backdrop-blur-sm text-slate-100 rounded-bl-sm'
       "
     >
-      <p class="text-sm whitespace-pre-wrap break-words">{{ message.text }}</p>
+      <p class="text-sm leading-snug whitespace-pre-wrap break-words">
+        {{ message.text }}
+      </p>
 
       <div class="flex items-center justify-end gap-1.5 mt-1">
         <span
@@ -28,12 +33,12 @@ defineProps<Props>();
           {{ message.timestamp }}
         </span>
 
-        <!-- Status indicators stile WhatsApp -->
+        <!-- Status indicators -->
         <span v-if="message.sent" class="flex items-center">
-          <!-- Sending (clock) -->
+          <!-- Sending -->
           <svg
             v-if="message.status === 'sending'"
-            class="h-4 w-4 text-indigo-200 animate-pulse"
+            class="h-3.5 w-3.5 text-indigo-200 animate-pulse"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -47,10 +52,10 @@ defineProps<Props>();
             />
           </svg>
 
-          <!-- Sent (singolo check) -->
+          <!-- Sent -->
           <svg
             v-else-if="!message.status || message.status === 'sent'"
-            class="h-4 w-4 text-indigo-200"
+            class="h-3.5 w-3.5 text-indigo-200"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -59,10 +64,10 @@ defineProps<Props>();
             <polyline points="20 6 9 17 4 12" />
           </svg>
 
-          <!-- Delivered (doppio check grigio) -->
+          <!-- Delivered -->
           <svg
             v-else-if="message.status === 'delivered'"
-            class="h-4 w-4 text-indigo-200"
+            class="h-3.5 w-3.5 text-indigo-200"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -72,10 +77,10 @@ defineProps<Props>();
             <polyline points="23 6 12 17" />
           </svg>
 
-          <!-- Read (doppio check verde) -->
+          <!-- Read -->
           <svg
             v-else-if="message.status === 'read'"
-            class="h-4 w-4 text-green-400"
+            class="h-3.5 w-3.5 text-green-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -85,10 +90,10 @@ defineProps<Props>();
             <polyline points="23 6 12 17" />
           </svg>
 
-          <!-- Fallback: se arriva uno status sconosciuto -->
+          <!-- Fallback -->
           <svg
             v-else
-            class="h-4 w-4 text-indigo-200"
+            class="h-3.5 w-3.5 text-indigo-200"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -99,14 +104,16 @@ defineProps<Props>();
         </span>
       </div>
 
-      <!-- Indicatore crittografia (visibile on hover) -->
+      <!-- Encryption Badge (hover) -->
       <div
-        class="absolute -top-1 -right-1 opacity-0 group-hover:opacity-90 transition-opacity"
+        class="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         title="Messaggio cifrato end-to-end"
       >
-        <div class="bg-slate-900 rounded-full p-0.5">
+        <div
+          class="bg-slate-900 rounded-full p-1 shadow-lg ring-1 ring-white/10"
+        >
           <svg
-            class="h-3 w-3 text-green-400"
+            class="h-2.5 w-2.5 text-green-400"
             fill="currentColor"
             viewBox="0 0 24 24"
           >
@@ -119,3 +126,20 @@ defineProps<Props>();
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+</style>

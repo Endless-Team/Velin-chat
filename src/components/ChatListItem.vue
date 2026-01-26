@@ -12,25 +12,22 @@ const emit = defineEmits<{
   select: [chatId: string];
 }>();
 
-// ✅ Calcola l'iniziale del nome
 const chatInitial = computed(() => {
   return props.chat.name.charAt(0).toUpperCase();
 });
 
-// ✅ Colore casuale ma consistente basato sul nome
 const avatarColor = computed(() => {
   const colors = [
-    "bg-indigo-600",
-    "bg-purple-600",
-    "bg-pink-600",
-    "bg-blue-600",
-    "bg-green-600",
-    "bg-yellow-600",
-    "bg-red-600",
-    "bg-cyan-600",
+    "from-indigo-500 to-purple-600",
+    "from-purple-500 to-pink-600",
+    "from-pink-500 to-rose-600",
+    "from-blue-500 to-cyan-600",
+    "from-green-500 to-emerald-600",
+    "from-yellow-500 to-orange-600",
+    "from-red-500 to-pink-600",
+    "from-cyan-500 to-blue-600",
   ];
 
-  // Hash semplice del nome per avere sempre lo stesso colore
   const hash = props.chat.name.split("").reduce((acc, char) => {
     return acc + char.charCodeAt(0);
   }, 0);
@@ -46,41 +43,74 @@ function handleClick() {
 <template>
   <button
     @click="handleClick"
-    class="flex w-full items-center gap-3 border-b border-white/5 p-3 transition-colors hover:bg-white/5"
-    :class="{ 'bg-white/10': isSelected }"
+    class="relative flex w-full items-center gap-2.5 px-3 py-2.5 transition-all duration-200 group hover:bg-white/5"
+    :class="{
+      'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-l-2 border-indigo-500':
+        isSelected,
+      'border-l-2 border-transparent': !isSelected,
+    }"
   >
-    <!-- ✅ Avatar con iniziale -->
-    <span
-      class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-semibold text-white"
-      :class="avatarColor"
-    >
-      {{ chatInitial }}
-    </span>
+    <!-- Avatar più piccolo -->
+    <div class="relative shrink-0">
+      <span
+        class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br font-bold text-white text-sm shadow-md ring-2 transition-all group-hover:ring-4"
+        :class="[
+          avatarColor,
+          isSelected
+            ? 'ring-indigo-500/30'
+            : 'ring-white/10 group-hover:ring-white/20',
+        ]"
+      >
+        {{ chatInitial }}
+      </span>
+
+      <!-- Status Online Indicator più piccolo -->
+      <span class="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
+        <span
+          class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+        ></span>
+        <span
+          class="relative inline-flex rounded-full h-3 w-3 bg-green-500 ring-2 ring-slate-900"
+        ></span>
+      </span>
+    </div>
 
     <!-- Info Chat -->
-    <span class="min-w-0 flex-1 text-left">
-      <span class="flex items-center justify-between gap-2">
-        <span class="truncate font-semibold text-slate-100">{{
-          chat.name
-        }}</span>
-        <span class="shrink-0 text-xs text-slate-400">{{
-          chat.timestamp
-        }}</span>
-      </span>
+    <div class="min-w-0 flex-1 text-left">
+      <div class="flex items-center justify-between gap-2 mb-0.5">
+        <span
+          class="truncate font-bold text-sm transition-colors"
+          :class="
+            isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'
+          "
+        >
+          {{ chat.name }}
+        </span>
+        <span class="shrink-0 text-xs text-slate-500">
+          {{ chat.timestamp }}
+        </span>
+      </div>
 
-      <span class="flex items-center justify-between gap-2 mt-1">
-        <span class="truncate text-sm text-slate-400">{{
-          chat.lastMessage
-        }}</span>
+      <div class="flex items-center justify-between gap-2">
+        <span
+          class="truncate text-xs text-slate-400 group-hover:text-slate-300"
+        >
+          {{ chat.lastMessage }}
+        </span>
 
-        <!-- Badge non letti -->
+        <!-- Badge non letti più piccolo -->
         <span
           v-if="chat.unread > 0"
-          class="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-xs font-semibold text-white"
+          class="flex h-4 min-w-[16px] shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 px-1.5 text-xs font-bold text-white shadow-md animate-pulse"
         >
-          {{ chat.unread }}
+          {{ chat.unread > 99 ? "99+" : chat.unread }}
         </span>
-      </span>
-    </span>
+      </div>
+    </div>
+
+    <!-- Hover Effect -->
+    <div
+      class="absolute inset-0 bg-gradient-to-r from-indigo-500/0 to-purple-500/0 opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none"
+    ></div>
   </button>
 </template>

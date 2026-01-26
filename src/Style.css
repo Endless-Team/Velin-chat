@@ -2,31 +2,35 @@
 
 /* Nascondi scrollbar per Chrome, Safari, Edge, Opera */
 ::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 /* Nascondi scrollbar per Firefox */
 * {
-    scrollbar-width: none;
+  scrollbar-width: none;
 }
 
 /* Nascondi scrollbar per IE e Edge legacy */
 * {
-    -ms-overflow-style: none;
+  -ms-overflow-style: none;
 }
 
-/* Forza scroll su html e body */
+/* ✅ RIMUOVI height e overflow da #app - lascia scroll naturale */
 html,
-body,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
 #app {
-    height: 100%;
-    width: 100%;
-    overflow: auto;
-    position: relative;
+  min-height: 100vh;
+  width: 100%;
 }
 
 /* Disabilita il gesto swipe indietro/avanti con trackpad */
 html,
 body {
-    overscroll-behavior: none;
+  overscroll-behavior: none;
 }
