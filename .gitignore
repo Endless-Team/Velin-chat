@@ -7,11 +7,22 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 dist-ssr
 *.local
-tree.txt
+
+# Tauri
+src-tauri/target/
+src-tauri/WixTools/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
 
 # Editor directories and files
 .vscode/*
@@ -24,5 +35,14 @@ tree.txt
 *.sln
 *.sw?
 
-# Env
-.env
+# OS
+Thumbs.db
+
+# Project specific
+tree.txt
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
