@@ -255,16 +255,6 @@ async function signInWithGoogle() {
           <span>Continua con Google</span>
         </button>
 
-        <!-- Messaggio Desktop -->
-        <div
-          v-else
-          class="mb-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl"
-        >
-          <p class="text-sm text-yellow-400 text-center">
-            🖥️ Login Google non disponibile su desktop
-          </p>
-        </div>
-
         <!-- Divider -->
         <div v-if="!isTauri" class="relative mb-6">
           <div class="absolute inset-0 flex items-center">
@@ -375,7 +365,7 @@ async function signInWithGoogle() {
         </form>
       </div>
 
-      <!-- Footer con badge E2EE -->
+      <!-- Footer con badge end-to-end -->
       <div class="mt-6 text-center">
         <div
           class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full"
@@ -394,7 +384,7 @@ async function signInWithGoogle() {
             />
           </svg>
           <span class="text-sm text-green-400 font-medium"
-            >Protetto con crittografia E2EE</span
+            >Protetto con crittografia end-to-end</span
           >
         </div>
         <p class="mt-3 text-xs text-slate-500">
