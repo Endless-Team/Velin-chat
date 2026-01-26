@@ -2,13 +2,14 @@
 import { ref, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
 import AppLayout from "../components/AppLayout.vue";
+import config from "../../version.json";
 
 // ========================================
 // CONFIGURAZIONE GITHUB
 // ========================================
 const GITHUB_USER = "Endless-Team"; // ⚠️ CAMBIA CON IL TUO USERNAME
 const GITHUB_REPO = "Velin-chat"; // ⚠️ CAMBIA CON IL NOME DEL TUO REPO
-const VERSION = "0.1.0"; // Mantieni sincronizzato con tauri.conf.json
+const VERSION = config.version; // Mantieni sincronizzato con tauri.conf.json
 
 // ========================================
 // STATE
