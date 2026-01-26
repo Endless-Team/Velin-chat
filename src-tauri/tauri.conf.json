@@ -54,7 +54,7 @@
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "installMode": "currentUser",
-        "languages": ["en-US", "it-IT"],
+        "languages": ["English", "Italian"],
         "displayLanguageSelector": true
       },
       "webviewInstallMode": {
@@ -94,11 +94,16 @@
     },
     "publisher": "Velin Team",
     "copyright": "Copyright © 2026 Velin Team",
-    "category": "Social",
+    "category": "Social Networking",
     "shortDescription": "Messaggistica sicura e privata",
     "longDescription": "Velin è una piattaforma di messaggistica istantanea progettata per conversazioni fluide, sicure e private. Crittografia end-to-end, velocità fulminea e privacy garantita.",
     "homepage": "https://velin.app",
     "license": "MIT",
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {
+    "updater": {
+      "active": false
+    }
   }
 }
