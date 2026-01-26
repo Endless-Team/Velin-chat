@@ -106,7 +106,7 @@ jobs:
             **Versione:** v__VERSION__  
             **Data rilascio:** $(date +'%d/%m/%Y')  
             **Build ID:** ${{ github.sha }}
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.platform.target }} --bundles ${{ matrix.platform.bundles }}
 

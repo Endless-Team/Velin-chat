@@ -8,7 +8,7 @@ import AppLayout from "../components/AppLayout.vue";
 // ========================================
 const GITHUB_USER = "Endless-Team"; // ⚠️ CAMBIA CON IL TUO USERNAME
 const GITHUB_REPO = "Velin-chat"; // ⚠️ CAMBIA CON IL NOME DEL TUO REPO
-const VERSION = "1.0.0"; // Mantieni sincronizzato con tauri.conf.json
+const VERSION = "0.1.0"; // Mantieni sincronizzato con tauri.conf.json
 
 // ========================================
 // STATE
