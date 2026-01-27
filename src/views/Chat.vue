@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useEncryptedChat } from "../composables/useEncryptedChat";
 import { keyStore } from "../stores/keyStore";
 import MessageBubble from "../components/MessageBubble.vue";
 import UnlockKeysModal from "../components/UnlockKeysModal.vue";
 
 const route = useRoute();
+const router = useRouter();
 
 const {
   chats,
@@ -122,32 +123,24 @@ async function sendMessage() {
 function handleKeysUnlocked() {
   showUnlockModal.value = false;
 }
+
+function goBackToList() {
+  // torna alla dashboard (lista chat)
+  router.push("/dashboard");
+}
 </script>
 
 <template>
   <!-- Loading State -->
   <div
     v-if="isLoading"
-    class="flex flex-1 items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900"
+    class="flex flex-1 items-center justify-center bg-linear-to-br from-slate-950 to-slate-900"
   >
     <div class="text-center space-y-4">
       <div class="relative">
-        <div
-          class="absolute inset-0 bg-indigo-500/20 blur-2xl animate-pulse"
-        ></div>
-        <svg
-          class="relative h-12 w-12 animate-spin text-indigo-400 mx-auto"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
+        <div class="absolute inset-0 bg-indigo-500/20 blur-2xl animate-pulse"></div>
+        <svg class="relative h-12 w-12 animate-spin text-indigo-400 mx-auto" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path
             class="opacity-75"
             fill="currentColor"
@@ -165,32 +158,38 @@ function handleKeysUnlocked() {
   <!-- Chat Content -->
   <div v-else class="flex flex-col h-full min-w-0 bg-slate-950 relative">
     <!-- Header Chat -->
-    <header
-      class="shrink-0 flex items-center justify-between border-b border-white/5 p-3 bg-slate-900/50 backdrop-blur-xl shadow-lg z-10"
-    >
+    <header class="shrink-0 flex items-center justify-between border-b border-white/5 p-3 bg-slate-900/50 backdrop-blur-xl shadow-lg z-10">
       <div class="flex items-center gap-2 min-w-0">
+        <!-- Back button: SOLO su mobile -->
+        <button
+          class="md:hidden rounded-lg p-2 text-slate-300 hover:bg-white/10 transition-all"
+          title="Indietro"
+          @click="goBackToList"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
         <span
           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-white text-sm shadow-lg ring-2 ring-white/10"
           :class="
             selectedChat?.isGroup
-              ? 'bg-gradient-to-br from-purple-500 to-pink-600'
-              : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+              ? 'bg-linear-to-br from-purple-500 to-pink-600'
+              : 'bg-linear-to-br from-indigo-500 to-purple-600'
           "
         >
           {{ chatAvatar }}
         </span>
+
         <div class="min-w-0">
           <h2 class="font-bold text-slate-100 truncate text-sm">
             {{ chatName }}
           </h2>
           <div class="flex items-center gap-1 text-xs">
             <span class="relative flex h-2 w-2">
-              <span
-                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
-              ></span>
-              <span
-                class="relative inline-flex rounded-full h-2 w-2 bg-green-500"
-              ></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
             </span>
             <span class="text-green-400 font-medium">Online</span>
           </div>
@@ -198,17 +197,8 @@ function handleKeysUnlocked() {
       </div>
 
       <div class="flex items-center gap-0.5 shrink-0">
-        <button
-          class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-indigo-400 transition-all"
-          title="Chiamata vocale"
-        >
-          <svg
-            class="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-          >
+        <button class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-indigo-400 transition-all" title="Chiamata vocale">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -216,17 +206,8 @@ function handleKeysUnlocked() {
             />
           </svg>
         </button>
-        <button
-          class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-purple-400 transition-all"
-          title="Videochiamata"
-        >
-          <svg
-            class="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-          >
+        <button class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-purple-400 transition-all" title="Videochiamata">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -234,17 +215,8 @@ function handleKeysUnlocked() {
             />
           </svg>
         </button>
-        <button
-          class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-all"
-          title="Informazioni"
-        >
-          <svg
-            class="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-          >
+        <button class="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-all" title="Informazioni">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -255,10 +227,10 @@ function handleKeysUnlocked() {
       </div>
     </header>
 
-    <!-- Area Messaggi con padding bottom ridotto -->
+    <!-- Area Messaggi -->
     <div
       ref="messagesContainer"
-      class="flex-1 min-h-0 space-y-2 overflow-y-auto p-6 pb-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+      class="flex-1 min-h-0 space-y-2 overflow-y-auto p-6 pb-20 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
       style="
         background-image: radial-gradient(
           rgba(148, 163, 184, 0.05) 1px,
@@ -267,27 +239,12 @@ function handleKeysUnlocked() {
         background-size: 20px 20px;
       "
     >
-      <MessageBubble
-        v-for="msg in currentMessages"
-        :key="msg.id"
-        :message="msg"
-      />
+      <MessageBubble v-for="msg in currentMessages" :key="msg.id" :message="msg" />
 
-      <!-- Empty State -->
-      <div
-        v-if="currentMessages.length === 0"
-        class="flex items-center justify-center h-full"
-      >
+      <div v-if="currentMessages.length === 0" class="flex items-center justify-center h-full">
         <div class="text-center space-y-3">
-          <div
-            class="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10 mx-auto"
-          >
-            <svg
-              class="h-8 w-8 text-indigo-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+          <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10 mx-auto">
+            <svg class="h-8 w-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -297,87 +254,43 @@ function handleKeysUnlocked() {
             </svg>
           </div>
           <p class="text-slate-400 text-sm">Nessun messaggio ancora</p>
-          <p class="text-slate-600 text-xs">
-            Invia il primo messaggio per iniziare
-          </p>
+          <p class="text-slate-600 text-xs">Invia il primo messaggio per iniziare</p>
         </div>
       </div>
     </div>
 
-    <!-- ✨ ISLAND - Input Messaggio (Spazio ridotto) -->
+    <!-- Input Island -->
     <div class="absolute bottom-0 left-0 right-0 p-3 pointer-events-none">
       <div class="max-w-4xl mx-auto">
-        <!-- Error Toast -->
         <div
           v-if="sendError"
-          class="mb-2 rounded-2xl border border-red-500/30 bg-gradient-to-r from-red-500/20 to-red-600/20 backdrop-blur-xl px-3 py-2 text-xs text-red-300 shadow-2xl flex items-start gap-2 pointer-events-auto animate-shake"
+          class="mb-2 rounded-2xl border border-red-500/30 bg-linear-to-r from-red-500/20 to-red-600/20 backdrop-blur-xl px-3 py-2 text-xs text-red-300 shadow-2xl flex items-start gap-2 pointer-events-auto animate-shake"
         >
-          <svg
-            class="h-4 w-4 text-red-400 shrink-0 mt-0.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
+          <svg class="h-4 w-4 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>{{ sendError }}</span>
         </div>
 
-        <!-- Input Island -->
         <form
           @submit.prevent="sendMessage"
           class="rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-xl shadow-2xl ring-1 ring-white/5 pointer-events-auto transition-all hover:shadow-indigo-500/20"
         >
           <div class="flex items-center gap-2 p-2">
-            <!-- Bottoni Sinistra -->
             <div class="flex items-center gap-0.5">
-              <button
-                type="button"
-                class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-indigo-400 transition-all"
-                title="Emoji"
-              >
-                <svg
-                  class="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
+              <button type="button" class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-indigo-400 transition-all" title="Emoji">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
 
-              <button
-                type="button"
-                class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-purple-400 transition-all"
-                title="Allega file"
-              >
-                <svg
-                  class="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                  />
+              <button type="button" class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-purple-400 transition-all" title="Allega file">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
               </button>
             </div>
 
-            <!-- Input Testo -->
             <div class="flex-1 relative">
               <textarea
                 v-model="message"
@@ -390,48 +303,23 @@ function handleKeysUnlocked() {
                   (e) => {
                     const target = e.target as HTMLTextAreaElement;
                     target.style.height = 'auto';
-                    target.style.height =
-                      Math.min(target.scrollHeight, 96) + 'px';
+                    target.style.height = Math.min(target.scrollHeight, 96) + 'px';
                   }
                 "
               />
             </div>
 
-            <!-- Bottone Invio -->
             <button
               type="submit"
               :disabled="!message.trim() || !isKeysUnlocked || isSending"
-              class="rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 p-2.5 text-white hover:from-indigo-500 hover:to-purple-500 disabled:cursor-not-allowed disabled:opacity-50 shrink-0 shadow-lg hover:shadow-indigo-500/50 transition-all hover:scale-105 active:scale-95 disabled:hover:scale-100"
+              class="rounded-xl bg-linear-to-br from-indigo-600 to-purple-600 p-2.5 text-white hover:from-indigo-500 hover:to-purple-500 disabled:cursor-not-allowed disabled:opacity-50 shrink-0 shadow-lg hover:shadow-indigo-500/50 transition-all hover:scale-105 active:scale-95 disabled:hover:scale-100"
               title="Invia"
             >
-              <svg
-                v-if="!isSending"
-                class="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                stroke-width="2.5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
+              <svg v-if="!isSending" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
-              <svg
-                v-else
-                class="h-5 w-5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
+              <svg v-else class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path
                   class="opacity-75"
                   fill="currentColor"
@@ -444,12 +332,7 @@ function handleKeysUnlocked() {
       </div>
     </div>
 
-    <!-- Modals -->
-    <UnlockKeysModal
-      v-if="showUnlockModal"
-      @unlocked="handleKeysUnlocked"
-      @close="showUnlockModal = false"
-    />
+    <UnlockKeysModal v-if="showUnlockModal" @unlocked="handleKeysUnlocked" @close="showUnlockModal = false" />
   </div>
 </template>
 

@@ -179,7 +179,7 @@ onMounted(() => {
             >
               Scarica
               <span
-                class="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent"
+                class="bg-linear-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent"
               >
                 Velin
               </span>
@@ -240,7 +240,7 @@ onMounted(() => {
 
                 <!-- Gradient Background Hover Effect -->
                 <div
-                  :class="`absolute inset-0 bg-gradient-to-br ${platform.gradient} opacity-0 transition-opacity group-hover:opacity-10`"
+                  :class="`absolute inset-0 bg-linear-to-br ${platform.gradient} opacity-0 transition-opacity group-hover:opacity-10`"
                 ></div>
 
                 <!-- Platform Content -->
@@ -282,7 +282,7 @@ onMounted(() => {
       <div class="w-full bg-slate-950 py-16">
         <div class="mx-auto max-w-7xl px-6">
           <section
-            class="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-12 backdrop-blur-sm"
+            class="rounded-3xl border border-white/10 bg-linear-to-br from-indigo-500/10 to-purple-500/10 p-12 backdrop-blur-sm"
           >
             <h2 class="mb-8 text-center text-3xl font-black uppercase">
               Sincronizzazione automatica
