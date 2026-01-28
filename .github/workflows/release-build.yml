@@ -7,27 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
+  release-linux:
+    name: Build Linux (deb, AppImage)
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            bundles: deb,appimage
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            bundles: dmg
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            bundles: dmg
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            bundles: msi,nsis
-
-    runs-on: ${{ matrix.platform.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,10 +23,9 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform.target }}
+          targets: x86_64-unknown-linux-gnu
 
       - name: Install dependencies (Ubuntu)
-        if: matrix.platform.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -75,7 +58,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%d/%m/%Y')" >> $GITHUB_OUTPUT
 
-      - name: Build app
+      - name: Build Linux app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -99,6 +82,9 @@ jobs:
             - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
             - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
 
+            ### Android
+            - **`Velin_x.x.x.apk`** - APK per Android
+
             ---
 
             ## 🐛 Segnala Bug
@@ -112,13 +98,241 @@ jobs:
             **Build ID:** ${{ github.sha }}
           releaseDraft: false
           prerelease: false
-          args: --target ${{ matrix.platform.target }} --bundles ${{ matrix.platform.bundles }}
+          args: --target x86_64-unknown-linux-gnu --bundles deb,appimage
 
-  android_apk:
-    name: Android APK
+  release-macos-arm:
+    name: Build macOS Apple Silicon (M1/M2/M3)
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Create .env file
+        run: |
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" >> .env
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> .env
+          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> .env
+          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" >> .env
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
+          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> .env
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%d/%m/%Y')" >> $GITHUB_OUTPUT
+
+      - name: Build macOS ARM app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "🚀 Velin ${{ github.ref_name }}"
+          releaseBody: |
+            ## 📦 Download
+
+            Scegli il file appropriato per il tuo sistema operativo:
+
+            ### Windows
+            - **`Velin_x.x.x_x64-setup.exe`** - Installer NSIS (consigliato)
+            - **`Velin_x.x.x_x64_en-US.msi`** - Installer MSI
+
+            ### macOS
+            - **`Velin_x.x.x_aarch64.dmg`** - Per Mac con chip Apple Silicon (M1/M2/M3)
+            - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
+
+            ### Linux
+            - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
+            - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
+
+            ### Android
+            - **`Velin_x.x.x.apk`** - APK per Android
+
+            ---
+
+            ## 🐛 Segnala Bug
+
+            Hai trovato un problema? [Apri un issue](https://github.com/Endless-Team/Velin-chat/issues/new)
+
+            ---
+
+            **Versione:** ${{ github.ref_name }}
+            **Data rilascio:** ${{ steps.date.outputs.date }}
+            **Build ID:** ${{ github.sha }}
+          releaseDraft: false
+          prerelease: false
+          args: --target aarch64-apple-darwin --bundles dmg
+
+  release-macos-intel:
+    name: Build macOS Intel (x64)
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Create .env file
+        run: |
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" >> .env
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> .env
+          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> .env
+          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" >> .env
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
+          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> .env
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%d/%m/%Y')" >> $GITHUB_OUTPUT
+
+      - name: Build macOS Intel app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "🚀 Velin ${{ github.ref_name }}"
+          releaseBody: |
+            ## 📦 Download
+
+            Scegli il file appropriato per il tuo sistema operativo:
+
+            ### Windows
+            - **`Velin_x.x.x_x64-setup.exe`** - Installer NSIS (consigliato)
+            - **`Velin_x.x.x_x64_en-US.msi`** - Installer MSI
+
+            ### macOS
+            - **`Velin_x.x.x_aarch64.dmg`** - Per Mac con chip Apple Silicon (M1/M2/M3)
+            - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
+
+            ### Linux
+            - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
+            - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
+
+            ### Android
+            - **`Velin_x.x.x.apk`** - APK per Android
+
+            ---
+
+            ## 🐛 Segnala Bug
+
+            Hai trovato un problema? [Apri un issue](https://github.com/Endless-Team/Velin-chat/issues/new)
+
+            ---
+
+            **Versione:** ${{ github.ref_name }}
+            **Data rilascio:** ${{ steps.date.outputs.date }}
+            **Build ID:** ${{ github.sha }}
+          releaseDraft: false
+          prerelease: false
+          args: --target x86_64-apple-darwin --bundles dmg
+
+  release-windows:
+    name: Build Windows (MSI, NSIS)
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Create .env file
+        run: |
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" >> .env
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> .env
+          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> .env
+          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" >> .env
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
+          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> .env
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%d/%m/%Y')" >> $env:GITHUB_OUTPUT
+
+      - name: Build Windows app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "🚀 Velin ${{ github.ref_name }}"
+          releaseBody: |
+            ## 📦 Download
+
+            Scegli il file appropriato per il tuo sistema operativo:
+
+            ### Windows
+            - **`Velin_x.x.x_x64-setup.exe`** - Installer NSIS (consigliato)
+            - **`Velin_x.x.x_x64_en-US.msi`** - Installer MSI
+
+            ### macOS
+            - **`Velin_x.x.x_aarch64.dmg`** - Per Mac con chip Apple Silicon (M1/M2/M3)
+            - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
+
+            ### Linux
+            - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
+            - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
+
+            ### Android
+            - **`Velin_x.x.x.apk`** - APK per Android
+
+            ---
+
+            ## 🐛 Segnala Bug
+
+            Hai trovato un problema? [Apri un issue](https://github.com/Endless-Team/Velin-chat/issues/new)
+
+            ---
+
+            **Versione:** ${{ github.ref_name }}
+            **Data rilascio:** ${{ steps.date.outputs.date }}
+            **Build ID:** ${{ github.sha }}
+          releaseDraft: false
+          prerelease: false
+          args: --target x86_64-pc-windows-msvc --bundles msi,nsis
+
+  android-apk:
+    name: Build Android APK
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -154,9 +368,20 @@ jobs:
       - name: Install Tauri CLI
         run: cargo install tauri-cli --locked
 
+      - name: Init Android project (CI)
+        run: cargo tauri android init
+
       - name: Build Android APK/AAB (release)
         run: cargo tauri android build
-        # Comando ufficiale della CLI Tauri v2 per generare APK e AAB [web:122]
+
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            src-tauri/gen/android/app/build/outputs/apk/**/release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
