@@ -79,11 +79,11 @@ jobs:
             - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
 
             ### Linux
-            - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
-            - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
+            - **`Velin_x.x.x_amd64.deb`** - Per Ubuntu/Debian
+            - **`Velin_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
 
             ### Android
-            - **`Velin_x.x.x.apk`** - APK per Android
+            - **`app-universal-release-unsigned.apk`** - APK per Android
 
             ---
 
@@ -155,11 +155,11 @@ jobs:
             - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
 
             ### Linux
-            - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
-            - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
+            - **`Velin_x.x.x_amd64.deb`** - Per Ubuntu/Debian
+            - **`Velin_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
 
             ### Android
-            - **`Velin_x.x.x.apk`** - APK per Android
+            - **`app-universal-release-unsigned.apk`** - APK per Android
 
             ---
 
@@ -231,11 +231,11 @@ jobs:
             - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
 
             ### Linux
-            - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
-            - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
+            - **`Velin_x.x.x_amd64.deb`** - Per Ubuntu/Debian
+            - **`Velin_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
 
             ### Android
-            - **`Velin_x.x.x.apk`** - APK per Android
+            - **`app-universal-release-unsigned.apk`** - APK per Android
 
             ---
 
@@ -307,11 +307,11 @@ jobs:
             - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
 
             ### Linux
-            - **`velin-chat_x.x.x_amd64.deb`** - Per Ubuntu/Debian
-            - **`velin-chat_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
+            - **`Velin_x.x.x_amd64.deb`** - Per Ubuntu/Debian
+            - **`Velin_x.x.x_amd64.AppImage`** - Universale (basta renderlo eseguibile)
 
             ### Android
-            - **`Velin_x.x.x.apk`** - APK per Android
+            - **`app-universal-release-unsigned.apk`** - APK per Android
 
             ---
 

@@ -40,7 +40,7 @@ const platforms = [
     name: "Linux",
     icon: "mdi:linux",
     description: "Ubuntu, Fedora, Debian",
-    downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/velin_${VERSION}_amd64.AppImage`,
+    downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/Velin_${VERSION}_amd64.AppImage`,
     os: "linux",
     gradient: "from-orange-500 to-red-500",
   },
@@ -57,10 +57,10 @@ const platforms = [
     name: "Android",
     icon: "mdi:android",
     description: "Android 8.0 o superiore",
-    downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/Velin_${VERSION}.apk`,
+    downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/app-universal-release-unsigned.apk`,
     os: "android",
     gradient: "from-green-500 to-emerald-500",
-    external: false, // ⚠️ Cambiato da true a false per download diretto
+    external: false,
   },
   {
     name: "Web",
