@@ -57,10 +57,10 @@ const platforms = [
     name: "Android",
     icon: "mdi:android",
     description: "Android 8.0 o superiore",
-    downloadUrl: "https://play.google.com/store/apps/details?id=com.velin.app", // ⚠️ Sostituisci con il tuo Play Store URL
+    downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/Velin_${VERSION}.apk`,
     os: "android",
     gradient: "from-green-500 to-emerald-500",
-    external: true,
+    external: false, // ⚠️ Cambiato da true a false per download diretto
   },
   {
     name: "Web",
