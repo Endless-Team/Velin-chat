@@ -394,12 +394,19 @@ jobs:
           echo "Listing APK files in output directory:"
           find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" -type f
 
+      - name: Rename APK to standard name
+        run: |
+          cd src-tauri/gen/android/app/build/outputs/apk/universal/release
+          if [ -f "app-universal-release-unsigned.apk" ]; then
+            mv app-universal-release-unsigned.apk app-universal-release.apk
+          fi
+
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

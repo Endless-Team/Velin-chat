@@ -57,7 +57,7 @@ const platforms = [
     name: "Android",
     icon: "mdi:android",
     description: "Android 8.0 o superiore",
-    downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/app-universal-release-unsigned.apk`,
+    downloadUrl: `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/v${VERSION}/app-universal-release.apk`,
     os: "android",
     gradient: "from-green-500 to-emerald-500",
     external: false,
