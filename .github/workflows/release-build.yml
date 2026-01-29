@@ -151,7 +151,7 @@ jobs:
             - **`Velin_x.x.x_x64_en-US.msi`** - Installer MSI
 
             ### macOS
-            - **`Velin_x.x.x_aarch64.dmg`** - Per Mac con chip Apple Silicon (M1/M2/M3)
+            - **`Velin_x.x.x_aarch64.dmg`** - Per Mac con chip Apple Silicon (M1/M2/M3/M4)
             - **`Velin_x.x.x_x64.dmg`** - Per Mac con chip Intel
 
             ### Linux
