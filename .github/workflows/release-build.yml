@@ -381,8 +381,9 @@ jobs:
       - name: Setup Android signing
         run: |
           mkdir -p src-tauri/gen/android
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > src-tauri/gen/android/keystore.properties
-          echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}" >> src-tauri/gen/android/keystore.properties
+          echo "storePassword=${{ secrets.ANDROID_KEY_PASSWORD }}" > src-tauri/gen/android/keystore.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> src-tauri/gen/android/keystore.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> src-tauri/gen/android/keystore.properties
           echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > $RUNNER_TEMP/keystore.jks
           echo "storeFile=$RUNNER_TEMP/keystore.jks" >> src-tauri/gen/android/keystore.properties
 
