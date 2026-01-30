@@ -378,7 +378,7 @@ jobs:
       - name: Init Android project
         run: cargo tauri android init
 
-      - name: Setup Android signing
+      - name: Setup Android signing config
         run: |
           mkdir -p src-tauri/gen/android
           echo "storePassword=${{ secrets.ANDROID_KEY_PASSWORD }}" > src-tauri/gen/android/keystore.properties
@@ -387,7 +387,7 @@ jobs:
           echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > $RUNNER_TEMP/keystore.jks
           echo "storeFile=$RUNNER_TEMP/keystore.jks" >> src-tauri/gen/android/keystore.properties
 
-      - name: Build Android APK (signed)
+      - name: Build Android APK (unsigned)
         run: cargo tauri android build
 
       - name: List APK files (debug)
@@ -395,12 +395,24 @@ jobs:
           echo "Listing APK files in output directory:"
           find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" -type f
 
-      - name: Rename APK to standard name
+      - name: Sign APK with apksigner
         run: |
-          cd src-tauri/gen/android/app/build/outputs/apk/universal/release
-          if [ -f "app-universal-release-unsigned.apk" ]; then
-            mv app-universal-release-unsigned.apk app-universal-release.apk
-          fi
+          UNSIGNED_APK="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
+          SIGNED_APK="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
+
+          echo "Unsigned APK: $UNSIGNED_APK"
+          ls -l "$UNSIGNED_APK"
+
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign \
+            --ks $RUNNER_TEMP/keystore.jks \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --ks-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out "$SIGNED_APK" \
+            "$UNSIGNED_APK"
+
+          echo "Signed APK created at: $SIGNED_APK"
+          ls -l "$SIGNED_APK"
 
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v1
