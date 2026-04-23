@@ -3,9 +3,14 @@ import type { Message } from "../types/chat.types";
 
 interface Props {
   message: Message;
+  isFirstOfSequence?: boolean;
+  isLastOfSequence?: boolean;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+  isFirstOfSequence: false,
+  isLastOfSequence: false,
+});
 </script>
 
 <template>
@@ -14,12 +19,14 @@ defineProps<Props>();
     :class="message.sent ? 'justify-end' : 'justify-start'"
   >
     <div
-      class="max-w-md rounded-xl px-3 py-2 relative group shadow-md transition-all hover:shadow-lg"
-      :class="
+      class="max-w-md px-3 py-2 relative group shadow-md transition-all hover:shadow-lg"
+      :class="[
         message.sent
-          ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-br-sm'
-          : 'border border-white/10 bg-slate-800/80 backdrop-blur-sm text-slate-100 rounded-bl-sm'
-      "
+          ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white'
+          : 'border border-white/10 bg-slate-800/80 backdrop-blur-sm text-slate-100',
+        isFirstOfSequence ? (message.sent ? 'rounded-tr-md' : 'rounded-tl-md') : '',
+        isLastOfSequence ? (message.sent ? 'rounded-bl-md' : 'rounded-br-md') : 'rounded-lg'
+      ]"
     >
       <p class="text-sm leading-snug whitespace-pre-wrap break-words">
         {{ message.text }}

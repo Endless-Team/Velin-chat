@@ -17,6 +17,15 @@ import {
 } from "firebase/firestore";
 
 /**
+ * STATO SINGOLO (module-level) - condiviso tra tutti i chiamanti.
+ * Ogni componente che chiama useEncryptedChat() ottiene riferimenti allo stesso stato.
+ */
+const chats = ref<Chat[]>([]);
+const messages = ref<Map<string, Message[]>>(new Map());
+const selectedChatId = ref<string | null>(null);
+const messageUnsubscribers = ref<Map<string, () => void>>(new Map());
+
+/**
  * Composable che gestisce una chat end-to-end encrypted (E2E) basata su:
  * - Firestore per persistenza e real-time updates
  * - Chiavi pubbliche/privata (keyStore) per cifrare/decifrare
@@ -26,28 +35,6 @@ import {
  */
 export function useEncryptedChat() {
   /**
-   * Lista delle chat disponibili per l’utente corrente.
-   */
-  const chats = ref<Chat[]>([]);
-
-  /**
-   * Mappa chatId -> array di messaggi (formato app).
-   * Nota: tenere una mappa evita di mischiare messaggi di chat diverse.
-   */
-  const messages = ref<Map<string, Message[]>>(new Map());
-
-  /**
-   * chatId selezionata (oppure null se nessuna chat è aperta).
-   */
-  const selectedChatId = ref<string | null>(null);
-
-  /**
-   * Mappa chatId -> funzione per disiscriversi al listener real-time.
-   * Serve per evitare duplicazione di listener e memory leak.
-   */
-  const messageUnsubscribers = ref<Map<string, () => void>>(new Map());
-
-  /**
    * Chat attualmente selezionata (oggetto Chat completo) oppure null.
    */
   const selectedChat = computed(() => {
@@ -55,7 +42,7 @@ export function useEncryptedChat() {
     return chats.value.find((c) => c.id === selectedChatId.value);
   });
 
-  /**
+/**
    * Messaggi relativi alla chat selezionata (selezione nulla => array vuoto).
    */
   const currentMessages = computed(() => {
@@ -605,7 +592,7 @@ export function useEncryptedChat() {
     }
   }
 
-  /**
+/**
    * Cleanup: rimuove tutti i listener real-time quando il composable viene smontato.
    * Evita aggiornamenti su componenti non più attivi e riduce consumo risorse.
    */
@@ -615,7 +602,8 @@ export function useEncryptedChat() {
   });
 
   /**
-   * Pulisce lo stato locale dei messaggi di una chat e disiscrive l’eventuale listener.
+   * Pulisce lo stato locale dei messaggi di una chat e disiscrive l'eventuale listener.
+   * NOTA: non pulisce selectedChatId che è globale (comportamento intenzionale).
    *
    * @param chatId ID della chat da pulire.
    */
