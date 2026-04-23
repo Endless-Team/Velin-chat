@@ -15,20 +15,18 @@ withDefaults(defineProps<Props>(), {
 
 <template>
   <div
-    class="flex animate-fadeIn"
+    class="flex animate-fadeIn mt-2"
     :class="message.sent ? 'justify-end' : 'justify-start'"
   >
     <div
-      class="max-w-md px-3 py-2 relative group shadow-md transition-all hover:shadow-lg"
+      class="max-w-md px-3 py-2 relative group shadow-md transition-all hover:shadow-lg rounded-2xl"
       :class="[
         message.sent
-          ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white'
-          : 'border border-white/10 bg-slate-800/80 backdrop-blur-sm text-slate-100',
-        isFirstOfSequence ? (message.sent ? 'rounded-tr-md' : 'rounded-tl-md') : '',
-        isLastOfSequence ? (message.sent ? 'rounded-bl-md' : 'rounded-br-md') : 'rounded-lg'
+          ? 'bg-linear-to-br from-indigo-600 to-purple-600 text-white'
+          : 'border border-white/10 bg-slate-800/80 backdrop-blur-sm text-slate-100'
       ]"
     >
-      <p class="text-sm leading-snug whitespace-pre-wrap break-words">
+      <p class="text-sm leading-snug whitespace-pre-wrap wrap-break-word">
         {{ message.text }}
       </p>
 
